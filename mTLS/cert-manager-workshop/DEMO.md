@@ -67,7 +67,7 @@ first because it's going to wrangle the certificates we use for Linkerd.
 ```bash
 helm install cert-manager jetstack/cert-manager \
      --namespace cert-manager --create-namespace \
-     --set installCRDs=true --version v1.10.0 \
+     --set installCRDs=true --version v1.14.4 \
      --wait
 ```
 
