@@ -50,8 +50,3 @@ Feel free to explore the different directories to see practical examples of Kube
 
 **IMPORTANT**: This repository is primarily for educational purposes. Always review and secure credentials before using any configurations in production environments.
 
----
-
-# ⚠️ Security Issues Identified
-
-Upon review, I've found several security-related issues in this repository:
