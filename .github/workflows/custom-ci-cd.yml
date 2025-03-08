@@ -32,8 +32,8 @@ jobs:
           ls -la
           
           # Navigate to the correct directory if needed
-          if [ -d "Kubernetes/opentelemetry-demo" ]; then
-            cd Kubernetes/opentelemetry-demo
+          if [ -d "opentelemetry-demo" ]; then
+            cd opentelemetry-demo
             echo "Working in directory: $(pwd)"
           else
             echo "ERROR: Could not find the correct directory"
@@ -45,8 +45,8 @@ jobs:
       - name: Generate
         run: |
           # Navigate to the correct directory
-          if [ -d "Kubernetes/opentelemetry-demo" ]; then
-            cd Kubernetes/opentelemetry-demo
+          if [ -d "opentelemetry-demo" ]; then
+            cd opentelemetry-demo
           fi
           
           make clean docker-generate-protobuf
@@ -54,8 +54,8 @@ jobs:
       - name: Check Clean Work Tree
         run: |
           # Navigate to the correct directory
-          if [ -d "Kubernetes/opentelemetry-demo" ]; then
-            cd Kubernetes/opentelemetry-demo
+          if [ -d "opentelemetry-demo" ]; then
+            cd opentelemetry-demo
           fi
           
           make check-clean-work-tree
