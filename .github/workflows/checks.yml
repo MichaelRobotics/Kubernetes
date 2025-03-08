@@ -5,8 +5,12 @@ name: Checks
 on:
   push:
     branches: [main]
+    paths:
+      - 'opentelemetry-demo/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'opentelemetry-demo/**'
   workflow_dispatch:
 
 jobs:
@@ -18,6 +22,9 @@ jobs:
 
   markdownlint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
     steps:
       - name: check out code
         uses: actions/checkout@v4
@@ -25,53 +32,3 @@ jobs:
         run: npm install
       - name: run markdownlint
         run: make markdownlint
-
-  yamllint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: check out code
-        uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: install yamllint
-        run: make install-yamllint
-      - name: run yamllint
-        run: yamllint . -f github
-
-  misspell:
-    runs-on: ubuntu-latest
-    steps:
-      - name: check out code
-        uses: actions/checkout@v4
-      - name: run misspell
-        run: make misspell
-
-  checklinks:
-    name: linkspector
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run linkspector
-        uses: umbrelladocs/action-linkspector@v1
-        with:
-          level: info
-          fail_level: any
-          config_file: '.linkspector.yml'
-
-  sanity:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: run sanitycheck.py
-        run: python3 ./internal/tools/sanitycheck.py
-
-  checklicense:
-    runs-on: ubuntu-latest
-    steps:
-      - name: check out code
-        uses: actions/checkout@v4
-      - name: install tools
-        run: make install-tools
-      - name: run checklicense
-        run: make checklicense

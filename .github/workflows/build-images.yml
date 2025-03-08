@@ -5,10 +5,9 @@ name: Test image generation
 on:
   push:
     paths:
-      - 'src/**'
-      - 'test/**'
+      - 'opentelemetry-demo/src/**'
+      - 'opentelemetry-demo/test/**'
 
 jobs:
   build_images:
-    if: github.repository == 'open-telemetry/opentelemetry-demo'
     uses: ./.github/workflows/component-build-images.yml
