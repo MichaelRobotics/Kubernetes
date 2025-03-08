@@ -3,14 +3,20 @@
 name: Checks
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'opentelemetry-demo/**'
   pull_request:
-    branches: [main]
     paths:
       - 'opentelemetry-demo/**'
+    paths-ignore:
+      - '**.md'
+      - 'opentelemetry-demo/docs/**'
+  push:
+    branches:
+      - '!main'  # Any branch except main
+    paths:
+      - 'opentelemetry-demo/**'
+    paths-ignore:
+      - '**.md'
+      - 'opentelemetry-demo/docs/**'
   workflow_dispatch:
 
 permissions:
