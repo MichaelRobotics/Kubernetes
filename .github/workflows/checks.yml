@@ -7,7 +7,6 @@ on:
     paths:
       - 'opentelemetry-demo/**'
     paths-ignore:
-      - '**.md'
       - 'opentelemetry-demo/docs/**'
   push:
     branches:
