@@ -133,7 +133,7 @@ jobs:
       - name: Determine working directory
         id: workspace
         run: |
-          if [ -d "Kubernetes/opentelemetry-demo" ]; then
+          if [ -d "opentelemetry-demo" ]; then
             echo "WORKING_DIR=opentelemetry-demo" >> $GITHUB_OUTPUT
             cd opentelemetry-demo
           else
