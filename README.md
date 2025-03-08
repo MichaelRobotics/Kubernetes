@@ -46,6 +46,42 @@ This repository demonstrates expertise in:
 
 Feel free to explore the different directories to see practical examples of Kubernetes deployments, configurations, and integrations.
 
+## 🔄 GitHub Workflows
+
+The repository contains several GitHub workflows for CI/CD automation. Here's an overview of the key workflows:
+
+### Core Workflows
+
+1. **custom-ci-cd.yml** - PRIMARY WORKFLOW
+   - Purpose: Main CI/CD pipeline for building and deploying the opentelemetry-demo
+   - Triggers: Push to main branch affecting opentelemetry-demo directory
+   
+2. **component-build-images.yml**
+   - Purpose: Builds container images for individual components
+   - Used by: custom-ci-cd and other workflows
+
+3. **build-images.yml**
+   - Purpose: Tests image generation for changes to src/test files
+   - Triggers: Push events affecting source or test files
+
+4. **checks.yml**
+   - Purpose: Runs linting and other code quality checks
+   - Triggers: Push and pull requests to main branch
+
+### Additional Workflows (Consider Removing)
+
+1. **stale.yml**
+   - Purpose: Automatically closes stale PRs
+   - Recommended: Only keep if you have many contributors and PRs
+
+2. **nightly-release.yml**
+   - Purpose: Creates nightly builds of all components
+   - Recommended: Only keep if you need nightly builds for testing
+
+3. **release.yml**
+   - Purpose: Publishes container images for GitHub releases
+   - Recommended: Only keep if you're publishing official releases
+
 ## Security Notice
 
 **IMPORTANT**: This repository is primarily for educational purposes. Always review and secure credentials before using any configurations in production environments.
