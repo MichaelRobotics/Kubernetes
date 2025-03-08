@@ -5,12 +5,12 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'Kubernetes/opentel-demo/**'
+      - 'Kubernetes/opentelemetry-demo/**'
       - 'opentelemetry-demo/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'Kubernetes/opentel-demo/**'
+      - 'Kubernetes/opentelemetry-demo/**'
       - 'opentelemetry-demo/**'
   # Enable manual execution from GitHub UI
   workflow_dispatch:
@@ -34,22 +34,24 @@ jobs:
           ls -la
           
           # Navigate to the correct directory if needed
-          if [ -d "Kubernetes/opentel-demo" ]; then
-            cd Kubernetes/opentel-demo
+          if [ -d "Kubernetes/opentelemetry-demo" ]; then
+            cd Kubernetes/opentelemetry-demo
             echo "Working in directory: $(pwd)"
           elif [ -d "opentelemetry-demo" ]; then  
             cd opentelemetry-demo
             echo "Working in directory: $(pwd)"
           else
-            echo "ERROR: Could not find either Kubernetes/opentel-demo or opentelemetry-demo directory"
+            echo "ERROR: Could not find the correct directory"
+            echo "Directory listing:"
+            find . -type d -maxdepth 2
             exit 1
           fi
           
       - name: Generate
         run: |
           # Navigate to the correct directory
-          if [ -d "Kubernetes/opentel-demo" ]; then
-            cd Kubernetes/opentel-demo
+          if [ -d "Kubernetes/opentelemetry-demo" ]; then
+            cd Kubernetes/opentelemetry-demo
           elif [ -d "opentelemetry-demo" ]; then  
             cd opentelemetry-demo
           fi
@@ -59,8 +61,8 @@ jobs:
       - name: Check Clean Work Tree
         run: |
           # Navigate to the correct directory
-          if [ -d "Kubernetes/opentel-demo" ]; then
-            cd Kubernetes/opentel-demo
+          if [ -d "Kubernetes/opentelemetry-demo" ]; then
+            cd Kubernetes/opentelemetry-demo
           elif [ -d "opentelemetry-demo" ]; then  
             cd opentelemetry-demo
           fi
@@ -140,14 +142,16 @@ jobs:
       - name: Determine working directory
         id: workspace
         run: |
-          if [ -d "Kubernetes/opentel-demo" ]; then
-            echo "WORKING_DIR=Kubernetes/opentel-demo" >> $GITHUB_OUTPUT
-            cd Kubernetes/opentel-demo
+          if [ -d "Kubernetes/opentelemetry-demo" ]; then
+            echo "WORKING_DIR=Kubernetes/opentelemetry-demo" >> $GITHUB_OUTPUT
+            cd Kubernetes/opentelemetry-demo
           elif [ -d "opentelemetry-demo" ]; then
             echo "WORKING_DIR=opentelemetry-demo" >> $GITHUB_OUTPUT
             cd opentelemetry-demo
           else
             echo "ERROR: Could not find the demo directory"
+            echo "Directory listing:"
+            find . -type d -maxdepth 2
             exit 1
           fi
           
@@ -207,14 +211,16 @@ jobs:
       - name: Determine working directory
         id: workspace
         run: |
-          if [ -d "Kubernetes/opentel-demo" ]; then
-            echo "WORKING_DIR=Kubernetes/opentel-demo" >> $GITHUB_OUTPUT
-            cd Kubernetes/opentel-demo
+          if [ -d "Kubernetes/opentelemetry-demo" ]; then
+            echo "WORKING_DIR=Kubernetes/opentelemetry-demo" >> $GITHUB_OUTPUT
+            cd Kubernetes/opentelemetry-demo
           elif [ -d "opentelemetry-demo" ]; then
             echo "WORKING_DIR=opentelemetry-demo" >> $GITHUB_OUTPUT
             cd opentelemetry-demo
           else
             echo "ERROR: Could not find the demo directory"
+            echo "Directory listing:"
+            find . -type d -maxdepth 2
             exit 1
           fi
       
