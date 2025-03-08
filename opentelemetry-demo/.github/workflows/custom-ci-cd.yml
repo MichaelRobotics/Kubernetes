@@ -15,12 +15,14 @@ on:
       - 'test/**'
       - 'opentelemetry-demo/.env.override'
       - '.env.override'
+  # Enable manual execution from GitHub UI
   workflow_dispatch:
     inputs:
       version:
         description: 'Version tag for images'
         required: true
         default: 'latest'
+        type: string
 
 jobs:
   protobufcheck:
