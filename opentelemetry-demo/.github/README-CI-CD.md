@@ -2,6 +2,14 @@
 
 This guide explains how to set up the CI/CD pipeline for building and pushing Docker images to your private Docker Hub repository.
 
+## Repository Structure Note
+
+This project is organized in a subdirectory structure:
+- The OpenTelemetry Demo code is in the `opentelemetry-demo/` subdirectory
+- The workflow watches for changes to files in both the root directory and the `opentelemetry-demo/` subdirectory
+
+Make sure to modify files in the correct location to trigger the workflow.
+
 ## Required GitHub Secrets
 
 Before you can use the workflow, you need to set up the following secrets in your GitHub repository:

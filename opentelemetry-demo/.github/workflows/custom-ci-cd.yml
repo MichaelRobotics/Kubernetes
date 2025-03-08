@@ -6,12 +6,14 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
+      - 'opentelemetry-demo/.env.override'
       - '.env.override'
   pull_request:
     branches: [ main ]
     paths:
       - 'src/**'
       - 'test/**'
+      - 'opentelemetry-demo/.env.override'
       - '.env.override'
   workflow_dispatch:
     inputs:
