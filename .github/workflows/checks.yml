@@ -13,6 +13,10 @@ on:
       - 'opentelemetry-demo/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build_images:
     uses: ./.github/workflows/component-build-images.yml
