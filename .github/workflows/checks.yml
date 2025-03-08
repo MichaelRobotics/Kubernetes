@@ -4,15 +4,14 @@ name: Checks
 
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'opentelemetry-demo/docs/**'
+    paths:
+      - 'opentelemetry-demo/**'
+
   push:
     branches:
       - '!main'  # Any branch except main
-    paths-ignore:
-      - '**.md'
-      - 'opentelemetry-demo/docs/**'
+    paths:
+      - 'opentelemetry-demo/**'
   workflow_dispatch:
 
 permissions:
