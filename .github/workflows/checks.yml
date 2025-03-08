@@ -3,12 +3,13 @@
 name: Checks
 
 on:
-  push:
-    branches: [main]
+  pull_request:
     paths:
       - 'opentelemetry-demo/**'
-  pull_request:
-    branches: [main]
+
+  push:
+    branches:
+      - '!main'  # Any branch except main
     paths:
       - 'opentelemetry-demo/**'
   workflow_dispatch:
@@ -19,7 +20,7 @@ permissions:
 
 jobs:
   build_images:
-    uses: ./.github/workflows/component-build-images.yml
+    uses: ./.github/workflows/component-build-images.yml    
     with:
       push: false
       version: 'dev'

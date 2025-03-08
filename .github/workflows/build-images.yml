@@ -3,10 +3,11 @@
 name: Test image generation
 
 on:
-  push:
+  pull_request:
     paths:
       - 'opentelemetry-demo/src/**'
       - 'opentelemetry-demo/test/**'
+      - 'opentelemetry-demo/Dockerfile*'
 
 jobs:
   build_images:

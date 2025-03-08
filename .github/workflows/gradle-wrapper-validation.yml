@@ -4,10 +4,7 @@ name: Gradle wrapper validation
 on:
   pull_request:
     paths:
-      - '**/gradle/wrapper/**'
-  push:
-    paths:
-      - '**/gradle/wrapper/**'
+      - 'opentelemetry-demo/**/gradle/wrapper/**'
 
 jobs:
   validation:

@@ -48,39 +48,52 @@ Feel free to explore the different directories to see practical examples of Kube
 
 ## 🔄 GitHub Workflows
 
-The repository contains several GitHub workflows for CI/CD automation. Here's an overview of the key workflows:
+The repository contains several optimized GitHub workflows for CI/CD automation. Each workflow has been configured to trigger at the appropriate time without overlapping:
 
 ### Core Workflows
 
 1. **custom-ci-cd.yml** - PRIMARY WORKFLOW
    - Purpose: Main CI/CD pipeline for building and deploying the opentelemetry-demo
-   - Triggers: Push to main branch affecting opentelemetry-demo directory
+   - Triggers: Only on push to main branch or manual workflow dispatch
+   - Functions: Builds and pushes Docker images, performs protobuf checks, deploys the demo
    
 2. **component-build-images.yml**
-   - Purpose: Builds container images for individual components
-   - Used by: custom-ci-cd and other workflows
-
+   - Purpose: Reusable workflow that handles container image building
+   - Usage: Not triggered directly - called by other workflows
+   - Functions: Provides Docker build functionality for other workflows
+   
 3. **build-images.yml**
-   - Purpose: Tests image generation for changes to src/test files
-   - Triggers: Push events affecting source or test files
-
+   - Purpose: Quick verification of container images
+   - Triggers: Pull requests affecting src/**, test/**, or Dockerfile files
+   - Functions: Validates builds without pushing images
+   
 4. **checks.yml**
-   - Purpose: Runs linting and other code quality checks
-   - Triggers: Push and pull requests to main branch
+   - Purpose: Code quality checks
+   - Triggers: Pull requests and pushes to non-main branches
+   - Excludes: Markdown files and documentation changes
+   - Functions: Runs markdownlint and validates images without pushing
 
-### Additional Workflows (Consider Removing)
+### Supporting Workflows
 
-1. **stale.yml**
-   - Purpose: Automatically closes stale PRs
-   - Recommended: Only keep if you have many contributors and PRs
+5. **run-integration-tests.yml**
+   - Purpose: Runs integration tests
+   - Triggers: On pull request reviews and pull requests
+   - Functions: Executes end-to-end tests with tracetesting
+   
+6. **dependabot-auto-update-protobuf-diff.yml**
+   - Purpose: Maintains protobuf files when dependencies change
+   - Triggers: PRs affecting dependency files (package.json, go.mod, etc.)
+   - Functions: Runs only for dependabot PRs to auto-update protobuf files
+   
+7. **gradle-wrapper-validation.yml**
+   - Purpose: Security check for Gradle wrappers
+   - Triggers: Only when Gradle wrapper files change
+   - Functions: Validates wrapper checksums for security
 
-2. **nightly-release.yml**
-   - Purpose: Creates nightly builds of all components
-   - Recommended: Only keep if you need nightly builds for testing
-
-3. **release.yml**
-   - Purpose: Publishes container images for GitHub releases
-   - Recommended: Only keep if you're publishing official releases
+8. **label-pr.yml**
+   - Purpose: Automatically labels pull requests
+   - Triggers: When PRs are opened, synchronized, or reopened
+   - Functions: Adds labels based on changed files for easier PR management
 
 ## Security Notice
 

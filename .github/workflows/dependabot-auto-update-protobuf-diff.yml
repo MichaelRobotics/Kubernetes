@@ -3,7 +3,12 @@
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
+    paths:
+      - 'opentelemetry-demo/**/go.mod'
+      - 'opentelemetry-demo/**/go.sum'
+      - 'opentelemetry-demo/**/package.json'
+      - 'opentelemetry-demo/**/package-lock.json'
 
 permissions:
   actions: write

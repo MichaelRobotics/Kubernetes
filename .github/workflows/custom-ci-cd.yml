@@ -1,16 +1,11 @@
 name: "Custom CI/CD Pipeline"
 
 on:
-  # Run workflow on any push to main branch
+  # Run workflow only on push to main branch or manual trigger
   push:
     branches: [ main ]
     paths:
       - 'opentelemetry-demo/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'opentelemetry-demo/**'
-  # Manual trigger still available but only for testing/emergency situations
   workflow_dispatch:
     inputs:
       version:
