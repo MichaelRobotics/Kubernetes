@@ -23,6 +23,7 @@ jobs:
     with:
       push: false
       version: 'dev'
+    secrets: inherit
 
   markdownlint:
     runs-on: ubuntu-latest
