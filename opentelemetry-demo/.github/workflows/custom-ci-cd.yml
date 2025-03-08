@@ -22,47 +22,33 @@ on:
 jobs:
   protobufcheck:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Navigate to correct directory
+      - name: List directories (debug)
         run: |
-          # List directories to debug
+          echo "Current directory: $(pwd)"
+          echo "Repository root contents:"
+          ls -la ..
+          echo "Current directory contents:"
           ls -la
           
-          # Navigate to the correct directory if needed
-          if [ -d "opentelemetry-demo" ]; then
-            cd opentelemetry-demo
-            echo "Working in directory: $(pwd)"
-          else
-            echo "ERROR: Could not find the correct directory"
-            echo "Directory listing:"
-            find . -type d -maxdepth 2
-            exit 1
-          fi
-          
       - name: Generate
-        run: |
-          # Navigate to the correct directory
-          if [ -d "opentelemetry-demo" ]; then
-            cd opentelemetry-demo
-          fi
-          
-          make clean docker-generate-protobuf
+        run: make clean docker-generate-protobuf
           
       - name: Check Clean Work Tree
-        run: |
-          # Navigate to the correct directory
-          if [ -d "opentelemetry-demo" ]; then
-            cd opentelemetry-demo
-          fi
-          
-          make check-clean-work-tree
+        run: make check-clean-work-tree
 
   build_and_push_images:
     runs-on: ubuntu-latest
     needs: protobufcheck
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
 
     permissions:
       contents: read
@@ -130,22 +116,8 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Determine working directory
-        id: workspace
-        run: |
-          if [ -d "opentelemetry-demo" ]; then
-            echo "WORKING_DIR=opentelemetry-demo" >> $GITHUB_OUTPUT
-            cd opentelemetry-demo
-          else
-            echo "ERROR: Could not find the demo directory"
-            echo "Directory listing:"
-            find . -type d -maxdepth 2
-            exit 1
-          fi
-          
       - name: Load environment variables from .env file
         run: |
-          cd ${{ steps.workspace.outputs.WORKING_DIR }}
           if [ -f .env ]; then
             grep -vE '^\s*#|^\s*$' .env | while read -r line; do
               echo "$line" >> $GITHUB_ENV
@@ -177,8 +149,8 @@ jobs:
       - name: Build and push Docker images
         uses: docker/build-push-action@v6
         with:
-          context: ${{ steps.workspace.outputs.WORKING_DIR }}/${{ matrix.file_tag.context }}
-          file: ${{ steps.workspace.outputs.WORKING_DIR }}/${{ matrix.file_tag.file }}
+          context: opentelemetry-demo/${{ matrix.file_tag.context }}
+          file: opentelemetry-demo/${{ matrix.file_tag.file }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             robclusterdev/clusterimages:${{ matrix.file_tag.tag_suffix }}
@@ -193,25 +165,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push_images
     if: github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
     steps:
       - uses: actions/checkout@v4
       
-      - name: Determine working directory
-        id: workspace
-        run: |
-          if [ -d "opentelemetry-demo" ]; then
-            echo "WORKING_DIR=opentelemetry-demo" >> $GITHUB_OUTPUT
-            cd opentelemetry-demo
-          else
-            echo "ERROR: Could not find the demo directory"
-            echo "Directory listing:"
-            find . -type d -maxdepth 2
-            exit 1
-          fi
-      
       - name: Update .env.override for deployment
         run: |
-          cd ${{ steps.workspace.outputs.WORKING_DIR }}
           cat > .env.override << EOF
           # Use custom images (uncomment and change to your container registry and image names)
           IMAGE_NAME=robclusterdev/clusterimages
@@ -239,7 +200,7 @@ jobs:
           echo ""
           echo "To deploy the application:"
           echo "1. Pull this repository"
-          echo "2. Navigate to ${{ steps.workspace.outputs.WORKING_DIR }}"
+          echo "2. Navigate to opentelemetry-demo"
           echo "3. Run 'make start'"
           echo ""
           echo "The application will use your custom images from robclusterdev/clusterimages" 
