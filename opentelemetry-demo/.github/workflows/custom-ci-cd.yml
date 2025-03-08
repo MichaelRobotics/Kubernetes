@@ -1,20 +1,11 @@
 name: "Custom CI/CD Pipeline"
 
 on:
+  # Run workflow on any push to main branch
   push:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'opentelemetry-demo/.env.override'
-      - '.env.override'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'opentelemetry-demo/.env.override'
-      - '.env.override'
   # Enable manual execution from GitHub UI
   workflow_dispatch:
     inputs:
