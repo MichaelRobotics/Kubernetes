@@ -1,0 +1,187 @@
+name: "Custom CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.env.override'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.env.override'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for images'
+        required: true
+        default: 'latest'
+
+jobs:
+  protobufcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate
+        run: make clean docker-generate-protobuf
+      - name: Check Clean Work Tree
+        run: make check-clean-work-tree
+
+  build_and_push_images:
+    runs-on: ubuntu-latest
+    needs: protobufcheck
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        file_tag:
+          - file: ./src/accounting/Dockerfile
+            tag_suffix: otel-demo-accounting
+            context: ./
+          - file: ./src/ad/Dockerfile
+            tag_suffix: otel-demo-ad
+            context: ./
+          - file: ./src/cart/src/Dockerfile
+            tag_suffix: otel-demo-cart
+            context: ./
+          - file: ./src/checkout/Dockerfile
+            tag_suffix: otel-demo-checkout
+            context: ./
+          - file: ./src/currency/Dockerfile
+            tag_suffix: otel-demo-currency
+            context: ./
+          - file: ./src/email/Dockerfile
+            tag_suffix: otel-demo-email
+            context: ./
+          - file: ./src/fraud-detection/Dockerfile
+            tag_suffix: otel-demo-fraud-detection
+            context: ./
+          - file: ./src/frontend/Dockerfile
+            tag_suffix: otel-demo-frontend
+            context: ./
+          - file: ./src/frontend-proxy/Dockerfile
+            tag_suffix: otel-demo-frontend-proxy
+            context: ./
+          - file: ./src/image-provider/Dockerfile
+            tag_suffix: otel-demo-image-provider
+            context: ./
+          - file: ./src/payment/Dockerfile
+            tag_suffix: otel-demo-payment
+            context: ./
+          - file: ./src/product-catalog/Dockerfile
+            tag_suffix: otel-demo-product-catalog
+            context: ./
+          - file: ./src/quote/Dockerfile
+            tag_suffix: otel-demo-quote
+            context: ./
+          - file: ./src/recommendation/Dockerfile
+            tag_suffix: otel-demo-recommendation
+            context: ./
+          - file: ./src/shipping/Dockerfile
+            tag_suffix: otel-demo-shipping
+            context: ./
+          - file: ./src/flagd-ui/Dockerfile
+            tag_suffix: otel-demo-flagd-ui
+            context: ./
+          # Infrastructure images - optional, uncomment if you want to build these too
+          # - file: ./src/kafka/Dockerfile
+          #   tag_suffix: otel-demo-kafka
+          #   context: ./
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Load environment variables from .env file
+        run: |
+          if [ -f .env ]; then
+            grep -vE '^\s*#|^\s*$' .env | while read -r line; do
+              echo "$line" >> $GITHUB_ENV
+            done
+          else
+            echo ".env file not found!"
+            exit 1
+          fi
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        if: github.event_name != 'pull_request'
+        
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=latest" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.file_tag.context }}
+          file: ${{ matrix.file_tag.file }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            robclusterdev/clusterimages:${{ matrix.file_tag.tag_suffix }}
+            robclusterdev/clusterimages:${{ steps.version.outputs.VERSION }}-${{ matrix.file_tag.tag_suffix }}
+          build-args: |
+            OTEL_JAVA_AGENT_VERSION=${{ env.OTEL_JAVA_AGENT_VERSION }}
+            OPENTELEMETRY_CPP_VERSION=${{ env.OPENTELEMETRY_CPP_VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy_demo:
+    runs-on: ubuntu-latest
+    needs: build_and_push_images
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update .env.override for deployment
+        run: |
+          cat > .env.override << EOF
+          # Use custom images (uncomment and change to your container registry and image names)
+          IMAGE_NAME=robclusterdev/clusterimages
+          DEMO_VERSION=otel-demo
+          IMAGE_VERSION=latest
+          
+          # Uncomment if you want to use public infrastructure images
+          # COLLECTOR_CONTRIB_IMAGE=ghcr.io/open-feature/flagd:v0.12.1
+          # FLAGD_IMAGE=ghcr.io/open-feature/flagd:v0.12.1
+          # GRAFANA_IMAGE=grafana/grafana:11.5.2
+          # JAEGERTRACING_IMAGE=jaegertracing/all-in-one:1.66.0
+          # OPENSEARCH_IMAGE=opensearchproject/opensearch:2.19.0
+          # POSTGRES_IMAGE=postgres:14.14-alpine
+          # PROMETHEUS_IMAGE=quay.io/prometheus/prometheus:v3.2.0
+          # VALKEY_IMAGE=valkey/valkey:8.1-alpine
+          EOF
+          
+      - name: Display successful completion message
+        run: |
+          echo "=========================="
+          echo "CI/CD Pipeline Completed!"
+          echo "=========================="
+          echo ""
+          echo "All images have been built and pushed to: robclusterdev/clusterimages"
+          echo ""
+          echo "To deploy the application:"
+          echo "1. Pull this repository"
+          echo "2. Run 'make start'"
+          echo ""
+          echo "The application will use your custom images from robclusterdev/clusterimages" 
