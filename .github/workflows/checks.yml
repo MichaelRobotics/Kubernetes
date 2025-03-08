@@ -15,7 +15,7 @@ on:
 
 jobs:
   build_images:
-    uses: opentelemetry-demo/component-build-images.yml
+    uses: ./.github/workflows/component-build-images.yml
     with:
       push: false
       version: 'dev'
