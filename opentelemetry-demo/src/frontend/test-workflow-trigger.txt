@@ -1,0 +1,6 @@
+This is a test file to trigger the GitHub Actions workflow.
+
+The workflow is configured to run when changes are made to files in the src/ directory.
+
+Date: 2025-03-08
+Test run: 1 
