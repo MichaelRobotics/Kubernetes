@@ -13,10 +13,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 	_ "github.com/lib/pq"
+	"github.com/opentelemetry/demo/src/usermanagementservice/handlers"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -25,7 +25,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -104,118 +103,16 @@ func initDB() *sql.DB {
 	return db
 }
 
-type server struct {
-	pb.UnimplementedUserManagementServiceServer
-	db        *sql.DB
-	tracer    trace.Tracer
-	jwtSecret []byte
+// HealthChecker implements the gRPC health check service
+type HealthChecker struct {
+	healthpb.UnimplementedHealthServer
 }
 
-func (s *server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	ctx, span := s.tracer.Start(ctx, "Register")
-	defer span.End()
-
-	// Validate input
-	if len(req.Username) < 3 {
-		span.RecordError(fmt.Errorf("username too short"))
-		return nil, status.Errorf(codes.InvalidArgument, "username must be at least 3 characters")
-	}
-	if len(req.Password) < 8 {
-		span.RecordError(fmt.Errorf("password too short"))
-		return nil, status.Errorf(codes.InvalidArgument, "password must be at least 8 characters")
-	}
-
-	// Check if username already exists
-	var exists bool
-	err := s.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", req.Username).Scan(&exists)
-	if err != nil {
-		span.RecordError(err)
-		return nil, status.Errorf(codes.Internal, "failed to check username: %v", err)
-	}
-	if exists {
-		span.RecordError(fmt.Errorf("username already exists"))
-		return nil, status.Errorf(codes.AlreadyExists, "username already exists")
-	}
-
-	// Hash the password
-	hashedPass, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		span.RecordError(err)
-		return nil, status.Errorf(codes.Internal, "failed to hash password: %v", err)
-	}
-
-	// Insert the user into the database
-	var userID int32
-	err = s.db.QueryRowContext(
-		ctx,
-		"INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id",
-		req.Username, string(hashedPass),
-	).Scan(&userID)
-	if err != nil {
-		span.RecordError(err)
-		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
-	}
-
-	return &pb.RegisterResponse{
-		UserId:   userID,
-		Username: req.Username,
-		Message:  "User registered successfully",
-	}, nil
-}
-
-func (s *server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	ctx, span := s.tracer.Start(ctx, "Login")
-	defer span.End()
-
-	// Get user from database
-	var userID int32
-	var username, passwordHash string
-	err := s.db.QueryRowContext(
-		ctx,
-		"SELECT id, username, password_hash FROM users WHERE username = $1",
-		req.Username,
-	).Scan(&userID, &username, &passwordHash)
-	if err != nil {
-		span.RecordError(err)
-		return nil, status.Errorf(codes.NotFound, "user not found")
-	}
-
-	// Compare password with hash
-	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password))
-	if err != nil {
-		span.RecordError(err)
-		return nil, status.Errorf(codes.Unauthenticated, "invalid password")
-	}
-
-	// Generate JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userID,
-		"exp": time.Now().Add(time.Hour * 1).Unix(),
-	})
-
-	tokenString, err := token.SignedString(s.jwtSecret)
-	if err != nil {
-		span.RecordError(err)
-		return nil, status.Errorf(codes.Internal, "failed to generate token: %v", err)
-	}
-
-	return &pb.LoginResponse{
-		Token:  tokenString,
-		UserId: userID,
-	}, nil
-}
-
-func (s *server) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	return &pb.HealthResponse{
-		Status: "ok",
-	}, nil
-}
-
-func (s *server) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+func (s *HealthChecker) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
 
-func (s *server) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
+func (s *HealthChecker) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
@@ -247,12 +144,9 @@ func main() {
 		log.Fatal("JWT_SECRET environment variable not set")
 	}
 
-	// Create server instance
-	srv := &server{
-		db:        db,
-		tracer:    tracer,
-		jwtSecret: []byte(jwtSecret),
-	}
+	// Create handlers
+	authHandler := handlers.NewAuthHandler(db, tracer, []byte(jwtSecret))
+	healthChecker := &HealthChecker{}
 
 	// Set up gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
@@ -267,8 +161,8 @@ func main() {
 	)
 
 	// Register services
-	pb.RegisterUserManagementServiceServer(grpcServer, srv)
-	healthpb.RegisterHealthServer(grpcServer, srv)
+	pb.RegisterUserManagementServiceServer(grpcServer, authHandler)
+	healthpb.RegisterHealthServer(grpcServer, healthChecker)
 	reflection.Register(grpcServer)
 
 	// Start server
