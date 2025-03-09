@@ -10,6 +10,21 @@ on:
       - 'opentelemetry-demo/src/usermanagementservice/**'
       - 'opentelemetry-demo/pb/demo.proto'
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      test_scope:
+        description: 'Scope of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - coverage
+      debug_enabled:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   test:
@@ -52,13 +67,28 @@ jobs:
           go get github.com/DATA-DOG/go-sqlmock
           go mod tidy
 
-      - name: Run unit tests
+      - name: Debug Info
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
+        run: |
+          echo "Running in debug mode"
+          echo "Go version: $(go version)"
+          echo "Directory structure:"
+          find opentelemetry-demo/src/usermanagementservice -type f | sort
+
+      - name: Run all tests
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' }}
+        run: cd opentelemetry-demo && make test-usermanagementservice
+
+      - name: Run unit tests only
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit' }}
         run: cd opentelemetry-demo && make test-usermanagementservice-unit
 
       - name: Generate coverage report
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
         run: cd opentelemetry-demo && make test-usermanagementservice-coverage
 
       - name: Upload coverage report
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
