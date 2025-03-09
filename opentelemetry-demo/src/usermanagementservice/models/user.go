@@ -1,3 +1,5 @@
+// This file is kept for reference only. The actual data structures are now defined in the protobuf files.
+// See genproto/oteldemo/demo.pb.go for the generated data structures.
 package models
 
 // User represents the user model stored in the database

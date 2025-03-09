@@ -690,28 +690,34 @@ services:
 
   # User Management Service
   usermanagementservice:
-    image: ${IMAGE_NAME:-otel/demo}:${IMAGE_VERSION:-latest}-usermanagementservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-usermanagementservice
+    container_name: usermanagementservice
     build:
       context: ./
-      dockerfile: ./src/usermanagementservice/Dockerfile
+      dockerfile: ${USER_MANAGEMENT_DOCKERFILE}
       cache_from:
-        - ${IMAGE_NAME:-otel/demo}:${IMAGE_VERSION:-latest}-usermanagementservice
-    container_name: usermanagementservice
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-usermanagementservice
+    deploy:
+      resources:
+        limits:
+          memory: 120M
     restart: unless-stopped
-    depends_on:
-      - postgres
-      - otelcol
     environment:
-      - USER_SVC_URL=:8080
-      - JWT_SECRET=${JWT_SECRET:-changeme-with-strong-secret}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=otelcol:4317
-      - DB_CONN=postgresql://postgres:postgres@postgres:5432/users?sslmode=disable
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
+      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=usermanagementservice
-      - OTEL_RESOURCE_ATTRIBUTES=service.name=usermanagementservice
+      - USER_SVC_URL=:${USER_MANAGEMENT_PORT}
+      - JWT_SECRET=opentelemetry-demo-jwt-secret
+      - DB_CONN=postgresql://postgres:postgres@postgres:5432/users?sslmode=disable
+    depends_on:
+      otel-collector:
+        condition: service_started
+      postgres:
+        condition: service_started
     ports:
-      - "8088:8080" # Expose on a different port to avoid conflicts
-    networks:
-      - default
+      - "${USER_MANAGEMENT_PORT}:${USER_MANAGEMENT_PORT}"
+    logging: *logging
 
   # ********************
   # Telemetry Components
