@@ -1,0 +1,65 @@
+name: Test User Management Service
+
+on:
+  push:
+    paths:
+      - 'opentelemetry-demo/src/usermanagementservice/**'
+      - 'opentelemetry-demo/pb/demo.proto'
+  pull_request:
+    paths:
+      - 'opentelemetry-demo/src/usermanagementservice/**'
+      - 'opentelemetry-demo/pb/demo.proto'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+          cache: true
+      
+      - name: Install Protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Generate Protobuf
+        run: |
+          cd opentelemetry-demo/src/usermanagementservice
+          mkdir -p genproto/oteldemo
+          protoc --go_out=. \
+                 --go-grpc_out=. \
+                 --proto_path=../../pb \
+                 ../../pb/demo.proto
+
+      - name: Install dependencies
+        run: |
+          cd opentelemetry-demo
+          make install-tools
+          cd src/usermanagementservice
+          go get github.com/stretchr/testify/assert
+          go get github.com/stretchr/testify/mock
+          go get github.com/DATA-DOG/go-sqlmock
+          go mod tidy
+
+      - name: Run unit tests
+        run: cd opentelemetry-demo && make test-usermanagementservice-unit
+
+      - name: Generate coverage report
+        run: cd opentelemetry-demo && make test-usermanagementservice-coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: opentelemetry-demo/src/usermanagementservice/coverage.html 

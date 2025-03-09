@@ -250,3 +250,19 @@ endif
 .PHONY: build-react-native-android
 build-react-native-android:
 	docker build -f src/react-native-app/android.Dockerfile --platform=linux/amd64 --output=. src/react-native-app
+
+# User Management Service Test Targets
+.PHONY: test-usermanagementservice test-usermanagementservice-unit test-usermanagementservice-coverage
+
+test-usermanagementservice:
+	cd src/usermanagementservice && go test -v ./...
+
+test-usermanagementservice-unit:
+	cd src/usermanagementservice && go test -v ./... -short
+
+test-usermanagementservice-coverage:
+	cd src/usermanagementservice && go test -v ./... -coverprofile=coverage.out && go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: src/usermanagementservice/coverage.html"
+
+# Add user management service tests to the overall test target
+run-tests: test-usermanagementservice

@@ -78,3 +78,4 @@ gen_proto_go product-catalog
 # gen_proto_php quote
 gen_proto_python recommendation
 gen_proto_rust shipping
+gen_proto_go usermanagementservice
