@@ -5,14 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 
+	"time"
+
+	pb "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo"
 	"github.com/golang-jwt/jwt"
-	pb "github.com/opentelemetry/demo/src/usermanagementservice/genproto/oteldemo"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 // AuthHandler manages authentication-related gRPC endpoints
@@ -152,4 +153,4 @@ func (h *AuthHandler) Health(ctx context.Context, req *pb.HealthRequest) (*pb.He
 	return &pb.HealthResponse{
 		Status: "ok",
 	}, nil
-} 
+}

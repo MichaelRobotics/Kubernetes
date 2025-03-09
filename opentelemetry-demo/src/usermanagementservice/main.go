@@ -14,9 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/handlers"
 	_ "github.com/lib/pq"
-	"github.com/opentelemetry/demo/src/usermanagementservice/handlers"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -24,14 +23,13 @@ import (
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/opentelemetry/demo/src/usermanagementservice/genproto/oteldemo"
+	pb "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo"
 )
 
 var (
@@ -180,4 +178,4 @@ func main() {
 
 	log.Println("Shutting down user management service...")
 	grpcServer.GracefulStop()
-} 
+}
