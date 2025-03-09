@@ -2,12 +2,25 @@ FROM golang:1.22 as builder
 
 WORKDIR /app
 
+# Install protoc
+RUN apt-get update && apt-get install -y protobuf-compiler && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
 # Copy and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy code
+# Copy the entire demo repository to access the proto files
 COPY . .
+
+# Generate protobuf code
+RUN cd /app && \
+    mkdir -p genproto/oteldemo && \
+    protoc --go_out=. \
+           --go-grpc_out=. \
+           --proto_path=../../pb \
+           ../../pb/demo.proto
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o /usermanagementservice
