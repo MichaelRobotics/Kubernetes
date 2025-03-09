@@ -6,7 +6,7 @@ import (
 )
 
 // HealthHandler handles health check requests
-type HealthHandler struct {}
+type HealthHandler struct{}
 
 // NewHealthHandler creates a new HealthHandler
 func NewHealthHandler() *HealthHandler {
@@ -20,4 +20,4 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 // Note: The Health gRPC handler is implemented in auth.go as a part of the AuthHandler
-// This allows us to maintain a single server implementation while still having modular code 
+// This allows us to maintain a single server implementation while still having modular code

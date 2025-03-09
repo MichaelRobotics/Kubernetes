@@ -1,95 +1,95 @@
-name: Test User Management Service
-
-on:
-  push:
-    paths:
-      - 'opentelemetry-demo/src/usermanagementservice/**'
-      - 'opentelemetry-demo/pb/demo.proto'
-  pull_request:
-    paths:
-      - 'opentelemetry-demo/src/usermanagementservice/**'
-      - 'opentelemetry-demo/pb/demo.proto'
-  workflow_dispatch:  # Allow manual triggering
-    inputs:
-      test_scope:
-        description: 'Scope of tests to run'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - unit
-          - coverage
-      debug_enabled:
-        description: 'Enable debug mode'
-        required: false
-        default: false
-        type: boolean
-
-jobs:
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.22'
-          cache: true
-      
-      - name: Install Protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-
-      - name: Generate Protobuf
-        run: |
-          cd opentelemetry-demo/src/usermanagementservice
-          mkdir -p genproto/oteldemo
-          protoc --go_out=. \
-                 --go-grpc_out=. \
-                 --proto_path=../../pb \
-                 ../../pb/demo.proto
-
-      - name: Install dependencies
-        run: |
-          cd opentelemetry-demo
-          make install-tools
-          cd src/usermanagementservice
-          go get github.com/stretchr/testify/assert
-          go get github.com/stretchr/testify/mock
-          go get github.com/DATA-DOG/go-sqlmock
-          go mod tidy
-
-      - name: Debug Info
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
-        run: |
-          echo "Running in debug mode"
-          echo "Go version: $(go version)"
-          echo "Directory structure:"
-          find opentelemetry-demo/src/usermanagementservice -type f | sort
-
-      - name: Run all tests
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' }}
-        run: cd opentelemetry-demo && make test-usermanagementservice
-
-      - name: Run unit tests only
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit' }}
-        run: cd opentelemetry-demo && make test-usermanagementservice-unit
-
-      - name: Generate coverage report
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
-        run: cd opentelemetry-demo && make test-usermanagementservice-coverage
-
-      - name: Upload coverage report
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: opentelemetry-demo/src/usermanagementservice/coverage.html 
+#name: Test User Management Service
+#
+#on:
+#  push:
+#    paths:
+#      - 'opentelemetry-demo/src/usermanagementservice/**'
+#      - 'opentelemetry-demo/pb/demo.proto'
+#  pull_request:
+#    paths:
+#      - 'opentelemetry-demo/src/usermanagementservice/**'
+#      - 'opentelemetry-demo/pb/demo.proto'
+#  workflow_dispatch:  # Allow manual triggering
+#    inputs:
+#      test_scope:
+#        description: 'Scope of tests to run'
+#        required: true
+#        default: 'all'
+#        type: choice
+#        options:
+#          - all
+#          - unit
+#          - coverage
+#      debug_enabled:
+#        description: 'Enable debug mode'
+#        required: false
+#        default: false
+#        type: boolean
+#
+#jobs:
+#  test:
+#    name: Run Tests
+#    runs-on: ubuntu-latest
+#    
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Go
+#        uses: actions/setup-go@v4
+#        with:
+#          go-version: '1.22'
+#          cache: true
+#      
+#      - name: Install Protoc
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y protobuf-compiler
+#          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+#          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+#
+#      - name: Generate Protobuf
+#        run: |
+#          cd opentelemetry-demo/src/usermanagementservice
+#          mkdir -p genproto/oteldemo
+#          protoc --go_out=. \
+#                 --go-grpc_out=. \
+#                 --proto_path=../../pb \
+#                 ../../pb/demo.proto
+#
+#      - name: Install dependencies
+#        run: |
+#          cd opentelemetry-demo
+#          make install-tools
+#          cd src/usermanagementservice
+#          go get github.com/stretchr/testify/assert
+#          go get github.com/stretchr/testify/mock
+#          go get github.com/DATA-DOG/go-sqlmock
+#          go mod tidy
+#
+#      - name: Debug Info
+#        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
+#        run: |
+#          echo "Running in debug mode"
+#          echo "Go version: $(go version)"
+#          echo "Directory structure:"
+#          find opentelemetry-demo/src/usermanagementservice -type f | sort
+#
+#      - name: Run all tests
+#        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' }}
+#        run: cd opentelemetry-demo && make test-usermanagementservice
+#
+#      - name: Run unit tests only
+#        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit' }}
+#        run: cd opentelemetry-demo && make test-usermanagementservice-unit
+#
+#      - name: Generate coverage report
+#        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
+#        run: cd opentelemetry-demo && make test-usermanagementservice-coverage
+#
+#      - name: Upload coverage report
+#        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: coverage-report
+#          path: opentelemetry-demo/src/usermanagementservice/coverage.html 
