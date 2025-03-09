@@ -36,6 +36,8 @@ jobs:
     defaults:
       run:
         working-directory: opentelemetry-demo
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
 
     permissions:
       contents: read
@@ -154,9 +156,63 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy_demo:
+  integration_tests:
     runs-on: ubuntu-latest
     needs: build_and_push_images
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set up environment for testing
+        run: |
+          # Create .env.override to use the images we just built
+          cat > .env.override << EOF
+          # Use custom images built in the previous step
+          IMAGE_NAME=robclusterdev/clusterimages
+          DEMO_VERSION=otel-demo
+          IMAGE_VERSION=${{ needs.build_and_push_images.outputs.version }}
+          EOF
+          
+          # Docker login to pull the images
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          
+      - name: Pull images
+        run: |
+          # Pull the necessary images instead of rebuilding them
+          docker compose pull
+          
+      - name: Run Integration Tests
+        run: |
+          # Start the application using the pulled images
+          docker compose up -d
+          
+          # Wait for services to be ready
+          echo "Waiting for services to be ready..."
+          sleep 30
+          
+          # Run the tests
+          make run-tracetesting
+          
+          # Cleanup
+          docker compose down
+      
+      - name: Report Test Results
+        if: always()
+        run: |
+          echo "Integration test results:"
+          if [ $? -eq 0 ]; then
+            echo "✅ All tests passed"
+          else
+            echo "❌ Tests failed"
+            exit 1
+          fi
+
+  deploy_demo:
+    runs-on: ubuntu-latest
+    needs: integration_tests
     if: github.event_name != 'pull_request'
     defaults:
       run:
