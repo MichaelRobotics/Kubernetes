@@ -56,6 +56,7 @@ if [ -z "$1" ]; then
   #gen_proto_php quote
   gen_proto_python recommendation
   #gen_proto_rust shipping
+  gen_proto_go usermanagementservice
 else
   "gen_proto_$1" "$2"
 fi
