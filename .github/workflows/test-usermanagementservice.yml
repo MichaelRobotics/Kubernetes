@@ -59,7 +59,7 @@ jobs:
         run: cd opentelemetry-demo && make test-usermanagementservice-coverage
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: opentelemetry-demo/src/usermanagementservice/coverage.html 
