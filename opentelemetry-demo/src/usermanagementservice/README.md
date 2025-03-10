@@ -16,11 +16,15 @@ The service follows a modular design pattern:
 
 ```
 usermanagementservice/
+├── handlers/         # API endpoint handlers
+│   ├── auth.go       # Authentication logic (register/login)
+│   └── health.go     # Health check handler
+├── models/           # Data models
+│   └── user.go       # User data structure
 ├── genproto/         # Generated protobuf code
 │   └── oteldemo/     # Generated service definitions
 ├── tests/            # Test files
 │   └── mocks/        # Mock implementations for testing
-│       └── db.go     # Database mock
 ├── Dockerfile        # Container definition
 ├── go.mod            # Go module dependencies
 ├── go.sum            # Go module checksums
@@ -66,28 +70,72 @@ This service uses the centralized database module located at `/src/db` for all d
 - User repository with CRUD operations
 - Schema creation and migration
 
-To configure the database, set the following environment variables in the project's `.env` file:
+The database connection is configured using the `DB_CONN` environment variable, which should contain a complete PostgreSQL connection string:
 
 ```
-# Database Configuration (used by all services)
-POSTGRES_USER=usermanagement
-POSTGRES_PASSWORD=usermanagement
-POSTGRES_DB=usermanagement
-POSTGRES_PORT=5432
-POSTGRES_HOST=postgres
-
-# Connection string for User Management Service
-USER_MANAGEMENT_DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
 ```
+
+### Database Migrations
+
+By default, automatic migrations are disabled when the service starts. To enable automatic migrations, set:
+
+```
+ENABLE_MIGRATIONS=true
+```
+
+When migrations are enabled, the service will:
+1. Attempt to create required tables if they don't exist
+2. Log the migration process
+
+When migrations are disabled (default), you'll need to apply migrations manually using the migration tool:
+
+```bash
+cd opentelemetry-demo/src/db
+export DB_CONN="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+go run tools/migrate/main.go
+```
+
+## Authentication
+
+The service uses JWT (JSON Web Tokens) for authentication. When a user logs in:
+
+1. Credentials are verified against the database
+2. A JWT token is generated using the secret key
+3. The token is returned to the client for future authenticated requests
+
+The JWT token contains the user ID as a claim and is signed with the secret specified in the `JWT_SECRET` environment variable.
 
 ## Environment Variables
 
-The following environment variables are required:
+The following environment variables are directly used by the service:
 
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry Collector endpoint (default: "otel-collector:4317")
-- `DB_CONN`: PostgreSQL connection string (typically set from USER_MANAGEMENT_DB_CONN)
-- `JWT_SECRET`: Secret key for signing JWT tokens (typically set from USER_MANAGEMENT_JWT_SECRET)
+- `DB_CONN`: PostgreSQL connection string in the format:
+  ```
+  postgres://username:password@host:port/database?sslmode=disable
+  ```
+
+- `JWT_SECRET`: Secret key for signing JWT tokens
+  ```
+  JWT_SECRET=your-secure-jwt-secret-here
+  ```
+
 - `USER_SVC_URL`: Service URL and port (default: ":8080")
+  ```
+  USER_SVC_URL=:8082
+  ```
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry Collector endpoint
+  ```
+  OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+  ```
+
+Optional environment variables:
+
+- `ENABLE_MIGRATIONS`: Set to "true" to enable automatic database migrations on startup (default: false)
+  ```
+  ENABLE_MIGRATIONS=true
+  ```
 
 ## gRPC API
 
@@ -140,13 +188,21 @@ Check service health.
 
 **Request:**
 ```protobuf
-message HealthRequest {}
+message HealthCheckRequest {
+    string service = 1;
+}
 ```
 
 **Response:**
 ```protobuf
-message HealthResponse {
-    string status = 1;
+message HealthCheckResponse {
+    enum ServingStatus {
+        UNKNOWN = 0;
+        SERVING = 1;
+        NOT_SERVING = 2;
+        SERVICE_UNKNOWN = 3;
+    }
+    ServingStatus status = 1;
 }
 ```
 

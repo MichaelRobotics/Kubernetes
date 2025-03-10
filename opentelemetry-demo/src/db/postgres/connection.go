@@ -10,6 +10,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// sqlOpen is a variable to allow for mocking in tests
+var sqlOpen = sql.Open
+
 // Connection represents a PostgreSQL database connection
 type Connection struct {
 	DB *sql.DB
@@ -22,7 +25,7 @@ func NewConnection(connString string) (*Connection, error) {
 	}
 
 	// Open connection to database
-	db, err := sql.Open("postgres", connString)
+	db, err := sqlOpen("postgres", connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}

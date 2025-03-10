@@ -34,14 +34,23 @@ done
 # Set environment variable for services
 echo "Database setup complete."
 echo "You can connect to the database with:"
-echo "export DB_CONN=\"postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable\""
+export DB_CONN="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+echo "export DB_CONN=\"${DB_CONN}\""
 
-# Test connection if psql is available
-if command -v psql > /dev/null; then
-    echo "Testing connection to PostgreSQL..."
-    PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT 'Connection successful!' as message;"
+
+# Run smoke test to verify database functionality
+echo "Running smoke test..."
+if [ -f ./smoke/test-usermanagement-db-connection.go ]; then
+    # Set the environment variable for the smoke test
+    go run ./smoke/test-usermanagement-db-connection.go
+    if [ $? -eq 0 ]; then
+        echo "✅ Smoke test completed successfully!"
+    else
+        echo "❌ Smoke test failed!"
+        exit 1
+    fi
 else
-    echo "PostgreSQL client (psql) not found. Skipping connection test."
+    echo "Smoke test file not found. Skipping smoke test."
 fi
 
 echo "PostgreSQL database setup complete!" 

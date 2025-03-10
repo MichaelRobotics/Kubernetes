@@ -137,9 +137,37 @@ The database module uses the following environment variables:
 - `POSTGRES_PASSWORD`: PostgreSQL password (default: postgres)
 - `POSTGRES_DB`: PostgreSQL database name (default: postgres)
 - `POSTGRES_PORT`: PostgreSQL port (default: 5432)
+- `POSTGRES_HOST`: PostgreSQL host address (default: postgres)
 - `DB_CONN`: Database connection string
 
-For the User Management Service, set:
+### Connection String Format
+
+The connection string follows this format:
 ```
+postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+```
+
+### Integration with Services
+
+For development:
+```bash
+# For local development
 export DB_CONN="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-``` 
+```
+
+For production in the OpenTelemetry Demo:
+```
+# In the .env file
+USER_MANAGEMENT_DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+```
+
+Services like the User Management Service expect the connection string to be passed as the `DB_CONN` environment variable. In the demo's docker-compose setup, the `.env` variable `USER_MANAGEMENT_DB_CONN` is mapped to the service's `DB_CONN` environment variable.
+
+### Enabling Migrations
+
+Migrations can be enabled by setting:
+```
+ENABLE_MIGRATIONS=true
+```
+
+When enabled, the User Management Service will automatically run necessary database migrations on startup. 
