@@ -708,15 +708,30 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=usermanagementservice
       - USER_SVC_URL=:${USER_MANAGEMENT_PORT}
-      - JWT_SECRET=opentelemetry-demo-jwt-secret
-      - DB_CONN=postgresql://postgres:postgres@postgres:5432/users?sslmode=disable
+      - DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+      - JWT_SECRET=${USER_MANAGEMENT_JWT_SECRET}
     depends_on:
       otel-collector:
         condition: service_started
-      postgres:
+      postgres-db:
         condition: service_started
     ports:
       - "${USER_MANAGEMENT_PORT}:${USER_MANAGEMENT_PORT}"
+    logging: *logging
+
+  # Database Service
+  postgres-db:
+    image: ${POSTGRES_IMAGE}
+    container_name: otel-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./src/db/migrations:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
     logging: *logging
 
   # ********************
@@ -758,6 +773,7 @@ services:
     volumes:
       - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./src/grafana/provisioning/:/etc/grafana/provisioning/
+      - grafana-storage:/var/lib/grafana
     ports:
       - "${GRAFANA_PORT}"
     logging: *logging
@@ -778,6 +794,7 @@ services:
       - ${DOCKER_SOCK}:/var/run/docker.sock:ro
       - ${OTEL_COLLECTOR_CONFIG}:/etc/otelcol-config.yml
       - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-config-extras.yml
+      - kafka-data:/var/lib/kafka
     ports:
       - "${OTEL_COLLECTOR_PORT_GRPC}"
       - "${OTEL_COLLECTOR_PORT_HTTP}"
@@ -811,6 +828,7 @@ services:
       - --enable-feature=exemplar-storage
     volumes:
       - ./src/prometheus/prometheus-config.yaml:/etc/prometheus/prometheus-config.yaml
+      - prometheus_data:/prometheus
     deploy:
       resources:
         limits:
@@ -855,3 +873,17 @@ services:
       timeout: 10s
       retries: 10
     logging: *logging
+
+volumes:
+  # Grafana
+  grafana-storage:
+  # Kafka
+  kafka-data:
+  # Prometheus
+  prometheus_data:
+  # Redis
+  redis-cart:
+  # Valkey
+  valkey:
+  # PostgreSQL
+  postgres_data:

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:17.3}
-    container_name: otel-db-postgres
+    container_name: otel-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -12,7 +12,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init:/docker-entrypoint-initdb.d
+      - ./migrations/versions:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
@@ -21,30 +21,8 @@ services:
     networks:
       - database-network
 
-  # Service-specific databases can be added here
-  usermanagement-postgres:
-    image: ${POSTGRES_IMAGE:-postgres:17.3}
-    container_name: usermanagement-postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER_MANAGEMENT:-usermanagement}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_MANAGEMENT:-usermanagement}
-      POSTGRES_DB: ${POSTGRES_DB_MANAGEMENT:-usermanagement}
-    ports:
-      - "${POSTGRES_PORT_MANAGEMENT:-5433}:5432"
-    volumes:
-      - usermanagement_postgres_data:/var/lib/postgresql/data
-      - ./init/usermanagement-init.sql:/docker-entrypoint-initdb.d/init-db.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_MANAGEMENT:-usermanagement}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - database-network
-
 volumes:
   postgres_data:
-  usermanagement_postgres_data:
 
 networks:
   database-network:

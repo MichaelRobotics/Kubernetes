@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
 	"time"
 
 	pb "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo"
@@ -59,13 +58,13 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 		return nil, status.Errorf(codes.Internal, "failed to check username: %v", err)
 	}
 	if exists {
-		span.RecordError(fmt.Errorf("username already exists"))
+		span.RecordError(fmt.Errorf("username exists"))
 		span.SetAttributes(attribute.Bool("success", false), attribute.String("error", "username_exists"))
 		return nil, status.Errorf(codes.AlreadyExists, "username already exists")
 	}
 
 	// Hash the password
-	hashedPass, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		span.RecordError(err)
 		span.SetAttributes(attribute.Bool("success", false))
@@ -73,11 +72,11 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 	}
 
 	// Insert the user into the database
-	var userID int32
+	var userID int64
 	err = h.DB.QueryRowContext(
 		ctx,
 		"INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id",
-		req.Username, string(hashedPass),
+		req.Username, string(hashedPassword),
 	).Scan(&userID)
 	if err != nil {
 		span.RecordError(err)
@@ -87,7 +86,7 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 
 	span.SetAttributes(
 		attribute.Bool("success", true),
-		attribute.Int("user_id", int(userID)),
+		attribute.Int64("user_id", userID),
 	)
 
 	return &pb.RegisterResponse{
@@ -103,7 +102,7 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 	defer span.End()
 
 	// Get user from database
-	var userID int32
+	var userID int64
 	var username, passwordHash string
 	err := h.DB.QueryRowContext(
 		ctx,
@@ -139,7 +138,7 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 
 	span.SetAttributes(
 		attribute.Bool("success", true),
-		attribute.Int("user_id", int(userID)),
+		attribute.Int64("user_id", userID),
 	)
 
 	return &pb.LoginResponse{
