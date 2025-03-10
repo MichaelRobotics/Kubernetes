@@ -328,7 +328,7 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-    int32 user_id = 1;
+    int64 user_id = 1;
     string username = 2;
     string message = 3;
 }
@@ -340,7 +340,7 @@ message LoginRequest {
 
 message LoginResponse {
     string token = 1;
-    int32 user_id = 2;
+    int64 user_id = 2;
 }
 
 message HealthRequest {}

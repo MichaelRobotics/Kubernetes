@@ -54,17 +54,39 @@ This service includes GitHub Actions integration that automatically runs tests w
 
 The service is configured to:
 
-1. Connect to PostgreSQL for persistent storage
+1. Connect to PostgreSQL for persistent storage via the centralized database module
 2. Send telemetry data to the OpenTelemetry Collector
 3. Provide authentication services to other components via gRPC
+
+## Database Integration
+
+This service uses the centralized database module located at `/src/db` for all database operations. The database module provides:
+
+- Connection management
+- User repository with CRUD operations
+- Schema creation and migration
+
+To configure the database, set the following environment variables in the project's `.env` file:
+
+```
+# Database Configuration (used by all services)
+POSTGRES_USER=usermanagement
+POSTGRES_PASSWORD=usermanagement
+POSTGRES_DB=usermanagement
+POSTGRES_PORT=5432
+POSTGRES_HOST=postgres
+
+# Connection string for User Management Service
+USER_MANAGEMENT_DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+```
 
 ## Environment Variables
 
 The following environment variables are required:
 
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry Collector endpoint (default: "otel-collector:4317")
-- `DB_CONN`: PostgreSQL connection string
-- `JWT_SECRET`: Secret key for signing JWT tokens
+- `DB_CONN`: PostgreSQL connection string (typically set from USER_MANAGEMENT_DB_CONN)
+- `JWT_SECRET`: Secret key for signing JWT tokens (typically set from USER_MANAGEMENT_JWT_SECRET)
 - `USER_SVC_URL`: Service URL and port (default: ":8080")
 
 ## gRPC API

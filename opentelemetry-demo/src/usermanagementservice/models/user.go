@@ -2,14 +2,18 @@
 // See genproto/oteldemo/demo.pb.go for the generated data structures.
 package models
 
-// User represents the user model stored in the database
+import "time"
+
+// User represents a user in the system
 type User struct {
-	ID           int    `json:"id"`
-	Username     string `json:"username"`
-	PasswordHash string `json:"-"` // Never expose in JSON
+	ID           int64     `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"-"` // Not exposed in JSON
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// Credentials represents the login/registration request body
+// Credentials represents a user login/registration request
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -18,7 +22,7 @@ type Credentials struct {
 // LoginResponse represents the login response with JWT token
 type LoginResponse struct {
 	Token  string `json:"token"`
-	UserID int    `json:"user_id"`
+	UserID int64  `json:"user_id"`
 }
 
 // ErrorResponse represents an API error response

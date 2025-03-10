@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres"
 	"github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/handlers"
 	_ "github.com/lib/pq"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -32,8 +33,36 @@ import (
 	pb "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo"
 )
 
+// Variables for dependency injection in tests
 var (
-	resource *sdkresource.Resource
+	resource  *sdkresource.Resource
+	sqlOpen   = sql.Open
+	osExit    = os.Exit
+	logFatalf = log.Fatalf
+	logFatal  = log.Fatal
+)
+
+// Provider functions to make testing easier
+var (
+	dbProvider = func() *sql.DB {
+		// Use the centralized database module to establish the connection
+		dbConn, err := postgres.GetConnectionFromEnv("DB_CONN")
+		if err != nil {
+			logFatal(err.Error())
+			osExit(1)
+			return nil // This line is never reached but helps with testing
+		}
+
+		// Create a user repository and ensure tables exist
+		userRepo := postgres.NewUserRepository(dbConn)
+		if err := userRepo.EnsureTablesExist(); err != nil {
+			logFatalf("Failed to ensure database tables exist: %v", err)
+			osExit(1)
+			return nil // This line is never reached but helps with testing
+		}
+
+		return dbConn.DB
+	}
 )
 
 const (
@@ -73,32 +102,7 @@ func initTracer() *sdktrace.TracerProvider {
 }
 
 func initDB() *sql.DB {
-	dbConn := os.Getenv("DB_CONN")
-	if dbConn == "" {
-		log.Fatal("DB_CONN environment variable not set")
-	}
-
-	var err error
-	var db *sql.DB
-	db, err = sql.Open("postgres", dbConn)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-
-	// Initialize the database schema
-	initStmt := `
-	CREATE TABLE IF NOT EXISTS users (
-		id SERIAL PRIMARY KEY,
-		username VARCHAR(255) UNIQUE NOT NULL,
-		password_hash VARCHAR(255) NOT NULL
-	);
-	`
-	_, err = db.Exec(initStmt)
-	if err != nil {
-		log.Fatalf("Failed to initialize database schema: %v", err)
-	}
-
-	return db
+	return dbProvider()
 }
 
 // HealthChecker implements the gRPC health check service

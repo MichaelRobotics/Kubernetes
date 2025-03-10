@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -23,59 +24,81 @@ func main() {
 	}
 	defer db.Close()
 
-	// Verify the connection works
+	// Test the connection
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
-
 	fmt.Println("Successfully connected to the database!")
 
-	// Verify the users table exists and has the correct schema
-	var tableExists bool
-	err = db.QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')").Scan(&tableExists)
+	// Create a user
+	username := fmt.Sprintf("testuser_%d", time.Now().Unix())
+	// Commented out as not used: password := "password123"
+	passwordHash := "$2a$10$QGfO0JUVuG5R.lQGXSIzd.pBB7WmJjkJ6zf6jE/oyGqhR8tGWRYMG" // hash for "testpassword123"
+
+	_, err = db.Exec(
+		"INSERT INTO users (username, password_hash) VALUES ($1, $2)",
+		username, passwordHash,
+	)
 	if err != nil {
-		log.Fatalf("Failed to check if users table exists: %v", err)
+		log.Fatalf("Failed to create user: %v", err)
 	}
+	fmt.Printf("Successfully created user: %s\n", username)
 
-	if !tableExists {
-		log.Fatal("Users table does not exist")
-	}
+	// Retrieve the user
+	var (
+		userID                int64
+		retrievedUsername     string
+		retrievedPasswordHash string
+		createdAt             time.Time
+		updatedAt             time.Time
+	)
 
-	fmt.Println("Users table exists with the following schema:")
+	err = db.QueryRow(
+		"SELECT id, username, password_hash, created_at, updated_at FROM users WHERE username = $1",
+		username,
+	).Scan(&userID, &retrievedUsername, &retrievedPasswordHash, &createdAt, &updatedAt)
 
-	// Get table schema
-	rows, err := db.Query(`
-		SELECT column_name, data_type, character_maximum_length
-		FROM information_schema.columns
-		WHERE table_name = 'users'
-		ORDER BY ordinal_position
-	`)
 	if err != nil {
-		log.Fatalf("Failed to get schema: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var columnName, dataType string
-		var maxLength sql.NullInt64
-		if err := rows.Scan(&columnName, &dataType, &maxLength); err != nil {
-			log.Fatalf("Failed to scan row: %v", err)
-		}
-		if maxLength.Valid {
-			fmt.Printf("  - %s: %s(%d)\n", columnName, dataType, maxLength.Int64)
-		} else {
-			fmt.Printf("  - %s: %s\n", columnName, dataType)
-		}
+		log.Fatalf("Failed to retrieve user: %v", err)
 	}
 
-	// Check how many users are in the database
+	fmt.Printf("Retrieved user: ID=%d, Username=%s, CreatedAt=%s, UpdatedAt=%s\n",
+		userID, retrievedUsername, createdAt.Format(time.RFC3339), updatedAt.Format(time.RFC3339))
+
+	// Count total users
 	var count int
 	err = db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
 	if err != nil {
 		log.Fatalf("Failed to count users: %v", err)
 	}
 	fmt.Printf("Total users in database: %d\n", count)
+
+	// Clean up: Delete the test user created during this test
+	_, err = db.Exec("DELETE FROM users WHERE username = $1", username)
+	if err != nil {
+		log.Fatalf("Failed to delete test user: %v", err)
+	}
+	fmt.Printf("Successfully deleted test user: %s\n", username)
+
+	// Verify the deletion
+	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE username = $1", username).Scan(&count)
+	if err != nil {
+		log.Fatalf("Failed to verify user deletion: %v", err)
+	}
+
+	if count == 0 {
+		fmt.Println("Verified test user was deleted successfully")
+	} else {
+		log.Fatalf("Failed to delete test user: user still exists in database")
+	}
+
+	// Count total users after deletion
+	err = db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		log.Fatalf("Failed to count users after deletion: %v", err)
+	}
+	fmt.Printf("Total users in database after cleanup: %d\n", count)
 
 	fmt.Println("Database connection test completed successfully!")
 }
