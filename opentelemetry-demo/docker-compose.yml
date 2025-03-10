@@ -689,35 +689,7 @@ services:
     logging: *logging
 
   # User Management Service
-  usermanagementservice:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-usermanagementservice
-    container_name: usermanagementservice
-    build:
-      context: ./
-      dockerfile: ${USER_MANAGEMENT_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-usermanagementservice
-    deploy:
-      resources:
-        limits:
-          memory: 120M
-    restart: unless-stopped
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=usermanagementservice
-      - USER_SVC_URL=:${USER_MANAGEMENT_PORT}
-      - DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
-      - JWT_SECRET=${USER_MANAGEMENT_JWT_SECRET}
-    depends_on:
-      otel-collector:
-        condition: service_started
-      postgres-db:
-        condition: service_started
-    ports:
-      - "${USER_MANAGEMENT_PORT}:${USER_MANAGEMENT_PORT}"
-    logging: *logging
+  
 
   # Database Service
   postgres-db:

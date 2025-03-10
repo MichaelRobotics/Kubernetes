@@ -25,8 +25,13 @@ type MigrationRunner struct {
 	Directory string
 }
 
+// MigrationRunnerInterface defines operations for migration runner for testability
+type MigrationRunnerInterface interface {
+	ApplyMigrations() error
+}
+
 // NewMigrationRunner creates a new migration runner
-func NewMigrationRunner(db *sql.DB, migrationsDir string) *MigrationRunner {
+var NewMigrationRunner = func(db *sql.DB, migrationsDir string) MigrationRunnerInterface {
 	return &MigrationRunner{
 		DB:        db,
 		Directory: migrationsDir,

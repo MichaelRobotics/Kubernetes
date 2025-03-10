@@ -53,12 +53,26 @@ var (
 			return nil // This line is never reached but helps with testing
 		}
 
-		// Create a user repository and ensure tables exist
+		// Check if migrations are enabled (disabled by default)
+		enableMigrations := false
+		if migrationsEnv := os.Getenv("ENABLE_MIGRATIONS"); migrationsEnv == "true" {
+			enableMigrations = true
+		}
+
+		// Create a user repository
 		userRepo := postgres.NewUserRepository(dbConn)
-		if err := userRepo.EnsureTablesExist(); err != nil {
-			logFatalf("Failed to ensure database tables exist: %v", err)
-			osExit(1)
-			return nil // This line is never reached but helps with testing
+
+		// Only run migrations if explicitly enabled
+		if enableMigrations {
+			log.Println("Migrations enabled. Running database migrations...")
+			if err := userRepo.EnsureTablesExist(); err != nil {
+				logFatalf("Failed to ensure database tables exist: %v", err)
+				osExit(1)
+				return nil // This line is never reached but helps with testing
+			}
+			log.Println("Database migrations completed successfully.")
+		} else {
+			log.Println("Migrations disabled. Skipping database migrations.")
 		}
 
 		return dbConn.DB
@@ -66,7 +80,7 @@ var (
 )
 
 const (
-	defaultPort = "8080"
+	defaultPort = "8082"
 )
 
 func initTracer() *sdktrace.TracerProvider {

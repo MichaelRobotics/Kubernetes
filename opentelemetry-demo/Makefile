@@ -181,6 +181,26 @@ check-clean-work-tree:
 	  exit 1; \
 	fi
 
+# Database related targets
+.PHONY: db-setup
+db-setup:
+	@echo "Setting up the database..."
+	@cd src/db && ./setup.sh
+
+# Database tests
+.PHONY: db-test
+db-test:
+	@echo "Running database tests..."
+	@cd src/db && go test -v ./...
+
+# Database tests with coverage
+.PHONY: db-test-coverage
+db-test-coverage:
+	@echo "Running database tests with coverage..."
+	@cd src/db && go test -v -coverprofile=coverage.out ./...
+	@cd src/db && go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated at src/db/coverage.html"
+
 .PHONY: start
 start:
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) up --force-recreate --remove-orphans --detach
