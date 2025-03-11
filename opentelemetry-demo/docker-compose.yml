@@ -585,6 +585,61 @@ services:
         condition: service_started
     logging: *logging
 
+  postgres:
+    image: ${POSTGRES_IMAGE}
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging: *logging
+    
+  # User Management Service
+  usermanagementservice:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-usermanagementservice
+    container_name: usermanagementservice
+    build:
+      context: ./
+      dockerfile: ./src/usermanagementservice/Dockerfile
+    ports:
+      - "${USER_SVC_PORT}:${USER_SVC_PORT}"
+    environment:
+      - USER_SVC_URL=${USER_SVC_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+      - OTEL_RESOURCE_ATTRIBUTES
+    healthcheck:
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:${USER_SVC_PORT}"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging: *logging
+    
+  # PostgreSQL volume
   # ******************
   # Dependent Services
   # ******************
@@ -688,24 +743,7 @@ services:
       - "${VALKEY_PORT}"
     logging: *logging
 
-  # User Management Service
   
-
-  # Database Service
-  postgres-db:
-    image: ${POSTGRES_IMAGE}
-    container_name: otel-postgres
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    volumes:
-      - ./src/db/migrations:/docker-entrypoint-initdb.d
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    logging: *logging
-
   # ********************
   # Telemetry Components
   # ********************
