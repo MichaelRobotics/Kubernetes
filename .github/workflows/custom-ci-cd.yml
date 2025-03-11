@@ -95,6 +95,12 @@ jobs:
           - file: ./src/flagd-ui/Dockerfile
             tag_suffix: otel-demo-flagd-ui
             context: ./
+          - file: ./src/db/Dockerfile
+            tag_suffix: 17.3
+            context: ./
+          - file: ./src/usermanagementservice/Dockerfile
+            tag_suffix: otel-demo-usermanagementservice
+            context: ./
           # Infrastructure images - optional, uncomment if you want to build these too
           # - file: ./src/kafka/Dockerfile
           #   tag_suffix: otel-demo-kafka

@@ -4,17 +4,37 @@ services:
   usermanagementservice:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-usermanagementservice
     container_name: usermanagementservice
-    network_mode: "host"  # Use host network to connect to existing postgres
+    build:
+      context: ../../
+      dockerfile: ${USER_SVC_DOCKERFILE}
     ports:
       - "${USER_SVC_PORT}:${USER_SVC_PORT}"
     environment:
       - USER_SVC_URL=${USER_SVC_PORT}
       - JWT_SECRET=${JWT_SECRET}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
-      - DB_CONN=${DB_CONN}
+      - DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+      - OTEL_RESOURCE_ATTRIBUTES
     healthcheck:
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=localhost:${USER_SVC_PORT}"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:${USER_SVC_PORT}"]
       interval: 5s
       timeout: 3s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+        tag: "{{.Name}}"
+    networks:
+      - usermgmt-network
+
+networks:
+  usermgmt-network:
+    name: opentelemetry-demo
+    external: true

@@ -7,7 +7,6 @@ on:
     paths:
       - 'opentelemetry-demo/src/**'
       - 'opentelemetry-demo/test/**'
-      - 'opentelemetry-demo/Dockerfile*'
 
 jobs:
   build_images:

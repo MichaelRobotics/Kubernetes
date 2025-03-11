@@ -1,65 +1,78 @@
 # Database Migrations
 
-This directory contains database migrations for the OpenTelemetry Demo.
+PostgreSQL migrations for the OpenTelemetry Demo, automatically applied during container startup.
+
+## Overview
+
+This directory contains database schema migrations for the OpenTelemetry Demo's PostgreSQL
+database. Migrations are SQL scripts that create or modify the database schema and are applied
+automatically when the PostgreSQL container starts.
+
+## How Migrations Work
+
+1. **Automatic Execution**: 
+   - The `./versions` directory is mounted to `/docker-entrypoint-initdb.d` in the PostgreSQL container
+   - PostgreSQL automatically executes all SQL files in this directory in alphabetical order
+
+2. **Version Tracking**:
+   - Each migration has a version number: `V{number}__{description}.sql`
+   - A `schema_migrations` table tracks which migrations have been applied
+   - Only new migrations are applied to existing databases
 
 ## Migration Structure
 
-Migrations are organized as follows:
+Migrations are organized in the following directory structure:
 
-- `versions/` - Contains versioned migration files
-  - `V1__initial_schema.sql` - Initial database schema
-  - `V2__add_test_user.sql` - Adds test user data
-  - (additional migrations will be added here)
-
-## Naming Convention
-
-Migrations follow a versioned naming convention:
-
-- `V{number}__{description}.sql` (e.g., `V1__initial_schema.sql`) 
-- Numbers are sequential and indicate the order of execution
-- Descriptions are lowercase with underscores
-
-## Migration Format
-
-Each migration file contains:
-
-1. A header with metadata
-2. UP migration section (changes to apply)
-3. DOWN migration section (how to roll back)
-
-Example:
-
-```sql
--- Migration: V1__some_name.sql
--- Description: What this migration does
--- Services: Which services use this migration
-
--- ==================== UP MIGRATION ====================
--- SQL statements to apply the migration
-
--- ==================== DOWN MIGRATION ====================
--- SQL statements to roll back the migration (commented out)
+```
+migrations/
+├── README.md               # This documentation
+└── versions/               # Versioned SQL migration files
+    ├── V1__initial_schema.sql  # Creates initial tables
+    ├── V2__add_test_user.sql   # Adds a test user
+    └── V{N}__{description}.sql # Additional migrations
 ```
 
-## Running Migrations
+## Schema
 
-Migrations are automatically applied when the PostgreSQL container starts. The Docker Compose configuration mounts this directory to `/docker-entrypoint-initdb.d` which PostgreSQL automatically executes on initialization.
+The current schema includes the following tables:
 
-For new databases, migrations are applied in alphanumeric order. For existing databases, be sure to run only the new migration files.
+- **users**: Stores user accounts
+  - `id`: Auto-incrementing primary key
+  - `username`: Unique username
+  - `password_hash`: Bcrypt-hashed passwords
+  - `created_at`: Timestamp of account creation
+  - `updated_at`: Timestamp of last update
 
-## Adding a New Migration
+- **schema_migrations**: Tracks applied migrations
+  - `version`: Migration version number
+  - `applied_at`: Timestamp when migration was applied
 
-To add a new migration:
+## Writing New Migrations
 
-1. Create a new file in the `versions/` directory with the next sequential number
-2. Follow the naming convention and format described above
-3. Test the migration on a development database
-4. Include both UP and DOWN migrations
+Each migration file follows this format:
 
-## Rolling Back Migrations
+```sql
+-- Migration: V{number}__{description}.sql
+-- Description: Brief explanation of what this migration does
+-- Services: Which OpenTelemetry services use this schema
 
-To roll back a migration:
+-- ==================== UP MIGRATION ====================
+-- SQL statements to apply the changes
+CREATE TABLE example (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL
+);
 
-1. Uncomment the statements in the DOWN migration section
-2. Execute them manually or use a migration tool
-3. Be careful with destructive operations! 
+-- ==================== DOWN MIGRATION ====================
+-- SQL statements to revert the changes (commented out)
+-- DROP TABLE example;
+```
+
+When adding a new migration:
+
+1. Create a new file with the next sequential version number
+2. Include both UP and DOWN migration sections
+3. Use clear, descriptive comments
+4. Test thoroughly before deploying
+
+For more details, see examples in the `versions/` directory. 

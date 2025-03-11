@@ -90,11 +90,6 @@ The repository contains several optimized GitHub workflows for CI/CD automation.
    - Triggers: Only when Gradle wrapper files change
    - Functions: Validates wrapper checksums for security
 
-8. **label-pr.yml**
-   - Purpose: Automatically labels pull requests
-   - Triggers: When PRs are opened, synchronized, or reopened
-   - Functions: Adds labels based on changed files for easier PR management
-
 ## Security Notice
 
 **IMPORTANT**: This repository is primarily for educational purposes. Always review and secure credentials before using any configurations in production environments.

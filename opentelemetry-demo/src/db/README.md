@@ -1,173 +1,76 @@
-# Database Module for OpenTelemetry Demo
+# PostgreSQL Database for OpenTelemetry Demo
 
-This module provides database functionality for the OpenTelemetry Demo microservices.
+PostgreSQL database service with automatic migrations for the OpenTelemetry Demo's user management.
 
-## Directory Structure
-
-```
-/src/db/
-├── docker-compose.yml          # Docker Compose configuration for PostgreSQL
-├── go.mod                      # Go module definition
-├── migrations/                 # Database migrations directory
-│   ├── README.md               # Migration documentation
-│   └── versions/               # Versioned migration files
-│       ├── V1__initial_schema.sql  # Initial schema migration
-│       └── V2__add_test_user.sql   # Test user migration
-├── postgres/                   # PostgreSQL client libraries
-│   ├── connection.go           # Database connection utilities
-│   ├── migration.go            # Migration runner implementation
-│   └── users.go                # User repository implementation
-├── scripts/                    # Utility scripts
-│   ├── cleanup-usermanagement-tests.sh  # Script to clean up test resources
-│   ├── setup-usermanagement-db.sh       # User management DB setup script
-│   └── test-usermanagement-db-connection.go # Test script for DB connection
-├── tools/                      # Command-line tools
-│   └── migrate/                # Database migration tool
-│       └── main.go             # Migration CLI implementation
-├── README.md                   # This README file
-└── setup.sh                    # Setup script to initialize database
-```
-
-## Features
-
-- PostgreSQL database setup
-- Connection management 
-- User repository implementation
-- Database schema migrations with version tracking
-- Migration CLI tool
-
-## Usage
-
-### Starting the Database
+## Quick Start
 
 ```bash
-# From the src/db directory
-./setup.sh
+# Start database (creates opentelemetry-demo network)
+docker-compose up -d
 ```
 
-This will:
-1. Start a PostgreSQL container
-2. Initialize the database with required tables using migrations
-3. Set up a test user account
+## Network Configuration
 
-### Running Migrations Manually
+The database service creates the `opentelemetry-demo` network which is shared with the 
+`usermanagementservice`. This network allows containers to communicate using their service names
+as hostnames.
 
+## Connection String
+
+Connect to the database using:
+```
+postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+```
+
+For local development:
 ```bash
-# From the src/db directory
 export DB_CONN="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-go run tools/migrate/main.go
 ```
 
-You can also specify a different migrations directory:
-```bash
-go run tools/migrate/main.go -dir /path/to/migrations
-```
-
-### Connecting from Services
-
-```go
-import (
-    "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres"
-)
-
-// Create a connection using environment variable
-conn, err := postgres.GetConnectionFromEnv("DB_CONN")
-if err != nil {
-    log.Fatalf("Failed to connect to database: %v", err)
-}
-defer conn.Close()
-
-// Use the user repository
-userRepo := postgres.NewUserRepository(conn)
-
-// Check if a username exists
-exists, err := userRepo.CheckUsername("testuser")
-
-// Get user by username
-user, err := userRepo.GetUserByUsername("testuser")
-
-// Create a new user
-userID, err := userRepo.CreateUser("newuser", "hashed_password")
-```
-
-### Testing Database Connections
-
-```bash
-# From the src/db directory
-export DB_CONN="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-go run scripts/test-usermanagement-db-connection.go
-```
-
-This script will:
-1. Connect to the database
-2. Create a test user
-3. Query for the test user
-4. Clean up by removing the test user when finished
-
-### Cleaning Up Test Resources
-
-After running tests or when you're finished with development, you can clean up any test resources:
-
-```bash
-# From the src/db directory
-./scripts/cleanup-usermanagement-tests.sh
-```
-
-This script will:
-1. Delete all test users created during testing (any username starting with 'testuser_')
-2. Optionally stop the PostgreSQL container when running in interactive mode
-3. Show a count of remaining users in the database
-
-## Database Migrations
-
-Migrations follow a versioned approach:
-
-1. Each migration is in a separate file with a version number: `V1__description.sql`
-2. Migrations contain both UP (apply) and DOWN (rollback) sections
-3. Migrations are tracked in a `schema_migrations` table in the database
-4. Only new migrations are applied to existing databases
-
-For more details, see the [migrations README](migrations/README.md).
+The hostname `postgres` resolves via Docker networking when services are on the same network.
 
 ## Environment Variables
-
-The database module uses the following environment variables:
 
 - `POSTGRES_USER`: PostgreSQL username (default: postgres)
 - `POSTGRES_PASSWORD`: PostgreSQL password (default: postgres)
 - `POSTGRES_DB`: PostgreSQL database name (default: postgres)
 - `POSTGRES_PORT`: PostgreSQL port (default: 5432)
 - `POSTGRES_HOST`: PostgreSQL host address (default: postgres)
-- `DB_CONN`: Database connection string
+- `DB_CONN`: Full database connection string
 
-### Connection String Format
+## Key Features
 
-The connection string follows this format:
+- **Containerized PostgreSQL**: Ready-to-use database server
+- **Automatic Migrations**: Database schema applied at startup
+- **User Management**: Authentication and account storage
+- **Docker Network Integration**: Seamless service communication
+
+## Directory Structure
+
 ```
-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+/src/db/
+├── docker-compose.yml          # PostgreSQL configuration
+├── migrations/                 # Database schema files
+│   └── versions/               # Versioned migrations
+├── postgres/                   # Client libraries
+│   ├── connection.go           # Connection utilities
+│   ├── migration.go            # Migration runner
+│   └── users.go                # User repository
+├── scripts/                    # Utility scripts
+└── tools/                      # Command-line tools
 ```
 
-### Integration with Services
+## Testing
 
-For development:
+Run the database test script to verify connectivity:
 ```bash
-# For local development
-export DB_CONN="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+./db-setup-test.sh
 ```
 
-For production in the OpenTelemetry Demo:
-```
-# In the .env file
-USER_MANAGEMENT_DB_CONN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
-```
+This will:
+1. Start the database container
+2. Verify database connection
+3. Run smoke tests
+4. Clean up automatically upon completion
 
-Services like the User Management Service expect the connection string to be passed as the `DB_CONN` environment variable. In the demo's docker-compose setup, the `.env` variable `USER_MANAGEMENT_DB_CONN` is mapped to the service's `DB_CONN` environment variable.
-
-### Enabling Migrations
-
-Migrations can be enabled by setting:
-```
-ENABLE_MIGRATIONS=true
-```
-
-When enabled, the User Management Service will automatically run necessary database migrations on startup. 
+For more details, see the [migrations README](migrations/README.md). 
