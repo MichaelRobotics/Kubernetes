@@ -14,8 +14,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/MichaelRobotics/Kubernetes/feature/usermanagment-service/opentelemetry-demo/src/db/postgres"
-
 	"github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/handlers"
 	_ "github.com/lib/pq"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
