@@ -1,31 +1,46 @@
-# PostgreSQL Database Package
+# PostgreSQL Package
 
-This package provides utilities for PostgreSQL database interaction within the OpenTelemetry Demo application.
+Go library for PostgreSQL database interactions in the OpenTelemetry Demo application.
+
+## Overview
+
+This package provides utilities for connecting to PostgreSQL databases and performing
+user management operations. It's designed for use by the User Management Service
+and other services that require database access.
 
 ## Features
 
-- Connection management with PostgreSQL
-- User management operations (create, retrieve, check)
-- Database migration system
+- **Connection Management**
+  - Create connections from connection strings or environment variables
+  - Connection pooling and lifecycle management
+  - Error handling and reconnection logic
+  
+- **User Repository**
+  - Create, retrieve, and verify user accounts
+  - Password hash verification
+  - Username availability checking
+  
+- **Database Migrations**
+  - Schema creation and updates
+  - Migration version tracking
+  - Automatic migration application
 
 ## Usage
 
 ### Establishing a Connection
 
 ```go
-import "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres"
-
 // Create a connection from a connection string
-conn, err := postgres.NewConnection("postgres://username:password@localhost:5432/dbname?sslmode=disable")
+conn, err := postgres.NewConnection("postgres://username:password@postgres:5432/dbname?sslmode=disable")
 if err != nil {
-    // Handle error
+    log.Fatalf("Failed to connect: %v", err)
 }
 defer conn.Close()
 
-// Or create a connection from an environment variable
-conn, err := postgres.GetConnectionFromEnv("DATABASE_URL")
+// Alternatively, create a connection from an environment variable
+conn, err := postgres.GetConnectionFromEnv("DB_CONN")
 if err != nil {
-    // Handle error
+    log.Fatalf("Failed to connect: %v", err)
 }
 defer conn.Close()
 ```
@@ -47,36 +62,16 @@ user, err := userRepo.GetUserByID(userId)
 
 // Get a user by username
 user, err := userRepo.GetUserByUsername("newuser")
+
+// Verify a user's password (returns true if password matches)
+matched, err := userRepo.VerifyPassword("username", "password")
 ```
 
 ### Migrations
 
 ```go
-// Ensure tables exist (applies migrations)
+// Ensure tables exist (applies migrations if necessary)
 err := userRepo.EnsureTablesExist()
 ```
 
-## Database Migrations
-
-Migrations are placed in the `../migrations/versions` directory with the naming pattern `V{version}__{name}.sql`.
-
-Each migration file should contain:
-
-```sql
--- Description: Brief description of the migration
-
--- ==================== UP MIGRATION ====================
--- SQL statements for applying the migration
-
--- ==================== DOWN MIGRATION ====================
--- SQL statements for reverting the migration
-```
-
-## Development
-
-To add a new database operation:
-
-1. Create a new method on an existing repository or add a new repository struct
-2. Write tests for the new functionality
-3. Implement the method using the SQL query builder or raw SQL
-4. Add corresponding migrations if needed 
+For more information on database migrations, see the [migrations README](../migrations/README.md).

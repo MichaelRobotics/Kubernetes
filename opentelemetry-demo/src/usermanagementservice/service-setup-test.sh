@@ -13,17 +13,18 @@ trap cleanup EXIT
 
 echo "Starting usermanagementservice..."
 
-# Check if the image exists
-if [[ "$(docker images -q usermanagementservice:latest 2> /dev/null)" == "" ]]; then
-  echo "Error: usermanagementservice:latest image not found."
-  echo "Please build the image first with: docker build -t usermanagementservice:latest -f Dockerfile ../../.."
-  exit 1
-fi
+
+set -a
+source ../../.env
+set +a
+
+set -a
+source ../../.env.override
+set +a
 
 # Stop any existing containers
-docker-compose down
+docker-compose down 
 
-# Start the service
 docker-compose up -d
 
 # Check if the service is healthy

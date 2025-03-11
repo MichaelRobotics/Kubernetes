@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: ${POSTGRES_IMAGE}
-    container_name: otel-postgres
+    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -18,12 +18,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+        tag: "{{.Name}}"
     networks:
-      - database-network
+      - usermgmt-network
+
+networks:
+  usermgmt-network:
+    name: opentelemetry-demo
 
 volumes:
   postgres_data:
-
-networks:
-  database-network:
-    driver: bridge 

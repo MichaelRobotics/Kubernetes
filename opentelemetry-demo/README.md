@@ -1,6 +1,3 @@
-<!-- markdownlint-disable-next-line -->
-# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> OpenTelemetry Demo
-
 ## 🛠️ Makefile Guide
 
 The Makefile serves as the main interface for working with this project. Below is a detailed breakdown of available commands:
@@ -12,17 +9,6 @@ The Makefile automates Docker Compose commands with proper environment configura
 ```make
 DOCKER_COMPOSE_CMD ?= docker compose
 DOCKER_COMPOSE_ENV=--env-file .env --env-file .env.override
-```
-
-Special handling is included for ARM-based Macs (M1/M2/M3/M4 processors):
-
-```make
-ifeq ($(shell uname -m),arm64)
-    ifeq ($(shell uname -s),Darwin)
-        DOCKER_COMPOSE_ENV+= --env-file .env.arm64
-        DOCKER_COMPOSE_BUILD_ARGS+= --build-arg=_JAVA_OPTIONS=-XX:UseSVE=0
-    endif
-endif
 ```
 
 ### Core Commands
