@@ -6,6 +6,7 @@ toolchain go1.22.1
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres v0.0.0-00010101000000-000000000000
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.10.0
@@ -40,4 +41,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-//replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db => ../db
+replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres => ../db/postgres

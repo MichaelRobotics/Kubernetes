@@ -134,8 +134,15 @@ clean-images:
         false; \
     fi
 
+# Run all tests in both db and postgres directories
+.PHONY: db-test-all
+db-test-all:
+	@echo "Running all database tests (including postgres module)..."
+	@cd src/db && ./run-all-tests.sh
+
+# Update run-tests to include db-test-all but not replace existing dependencies
 .PHONY: run-tests
-run-tests:
+run-tests: db-test-all
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run frontendTests
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run traceBasedTests
 
