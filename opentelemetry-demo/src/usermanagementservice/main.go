@@ -76,6 +76,30 @@ func (s *HealthChecker) Watch(req *grpc_health_v1.HealthCheckRequest, ws grpc_he
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
+// UserManagementServiceServer combines the AuthHandler with the Health method
+type UserManagementServiceServer struct {
+	authHandler *handlers.AuthHandler
+	pb.UnimplementedUserManagementServiceServer
+}
+
+// Register forwards the register request to the auth handler
+func (s *UserManagementServiceServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	return s.authHandler.Register(ctx, req)
+}
+
+// Login forwards the login request to the auth handler
+func (s *UserManagementServiceServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	return s.authHandler.Login(ctx, req)
+}
+
+// Health handles the Health RPC call for the UserManagementService
+func (s *UserManagementServiceServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
+	// Use the same status as the gRPC health check
+	return &pb.HealthResponse{
+		Status: "ok",
+	}, nil
+}
+
 func initTracer() *sdktrace.TracerProvider {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
@@ -146,6 +170,11 @@ func main() {
 	authHandler := handlers.NewAuthHandler(db, tracer, []byte(jwtSecret))
 	healthChecker := &HealthChecker{}
 
+	// Create the combined service server
+	userManagementServer := &UserManagementServiceServer{
+		authHandler: authHandler,
+	}
+
 	// Set up gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
@@ -159,7 +188,7 @@ func main() {
 	)
 
 	// Register services
-	pb.RegisterUserManagementServiceServer(grpcServer, authHandler)
+	pb.RegisterUserManagementServiceServer(grpcServer, userManagementServer)
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthChecker)
 	reflection.Register(grpcServer)
 

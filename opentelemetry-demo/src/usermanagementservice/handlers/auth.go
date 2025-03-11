@@ -146,10 +146,3 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 		UserId: userID,
 	}, nil
 }
-
-// Health handles health check requests
-func (h *AuthHandler) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	return &pb.HealthResponse{
-		Status: "ok",
-	}, nil
-}
