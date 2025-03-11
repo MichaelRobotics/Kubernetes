@@ -2,18 +2,18 @@ version: '3.8'
 
 services:
   usermanagementservice:
-    image: usermanagementservice:latest
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-usermanagementservice
     container_name: usermanagementservice
     network_mode: "host"  # Use host network to connect to existing postgres
     ports:
-      - "8082:8082"
+      - "${USER_SVC_PORT}:${USER_SVC_PORT}"
     environment:
-      - USER_SVC_URL=8082
-      - JWT_SECRET=your-secure-jwt-secret
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - DB_CONN=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+      - USER_SVC_URL=${USER_SVC_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - DB_CONN=${DB_CONN}
     healthcheck:
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=localhost:8082"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=localhost:${USER_SVC_PORT}"]
       interval: 5s
       timeout: 3s
       retries: 3
