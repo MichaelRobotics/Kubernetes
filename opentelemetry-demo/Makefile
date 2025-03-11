@@ -134,15 +134,8 @@ clean-images:
         false; \
     fi
 
-# Run all tests in both db and postgres directories
-.PHONY: db-test-all
-db-test-all:
-	@echo "Running all database tests (including postgres module)..."
-	@cd src/db && ./run-all-tests.sh
 
-# Update run-tests to include db-test-all but not replace existing dependencies
 .PHONY: run-tests
-run-tests: db-test-all
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run frontendTests
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run traceBasedTests
 
@@ -189,23 +182,35 @@ check-clean-work-tree:
 	fi
 
 # Database related targets
-.PHONY: db-setup
-db-setup:
+.PHONY: db-setup-test
+db-setup-test:
 	@echo "Setting up the database..."
-	@cd src/db && ./setup.sh
+	@cd src/db && ./db-setup-test.sh
 
 # Database tests
-.PHONY: db-test
-db-test:
-	@echo "Running database tests..."
-	@cd src/db && go test -v ./...
+.PHONY: db-unittest
+db-unittest:
+	@echo "Running database unit tests..."
+	@cd src/db && go test -v `go list ./... | grep -v /genproto/`
+	@cd src/db/postgres && go test -v `go list ./... | grep -v /genproto/`
 
 # Database tests with coverage
-.PHONY: db-test-coverage
-db-test-coverage:
+.PHONY: db-unittest-coverage
+db-unittest-coverage:
 	@echo "Running database tests with coverage..."
-	@cd src/db && go test -v -coverprofile=coverage.out ./...
-	@cd src/db && go tool cover -html=coverage.out -o coverage.html
+	# Run tests and generate coverage for main db packages
+	@cd src/db && go test -v -covermode=count -coverprofile=coverage.out `go list ./... | grep -v /genproto/`
+	# Run tests and generate coverage for postgres package
+	@cd src/db/postgres && go test -v -covermode=count -coverprofile=postgres_coverage.out `go list ./... | grep -v /genproto/`
+	# Combine coverage reports
+	@cd src/db && echo "mode: count" > combined_coverage.out
+	@cd src/db && grep -h -v "^mode:" coverage.out >> combined_coverage.out
+	@cd src/db && grep -h -v "^mode:" postgres/postgres_coverage.out >> combined_coverage.out
+	# Generate HTML report from combined coverage
+	@cd src/db && go tool cover -html=combined_coverage.out -o coverage.html
+	# Clean up intermediate files
+	@cd src/db && rm coverage.out combined_coverage.out
+	@cd src/db/postgres && rm postgres_coverage.out
 	@echo "Coverage report generated at src/db/coverage.html"
 
 .PHONY: start
@@ -279,17 +284,15 @@ build-react-native-android:
 	docker build -f src/react-native-app/android.Dockerfile --platform=linux/amd64 --output=. src/react-native-app
 
 # User Management Service Test Targets
-.PHONY: test-usermanagementservice test-usermanagementservice-unit test-usermanagementservice-coverage
+.PHONY: user-management-service-setup-test user-management-service-unittest user-management-service-coverage-unittest
 
-test-usermanagementservice:
-	cd src/usermanagementservice && go test -v ./...
+user-management-service-setup-test:
+	cd src/usermanagementservice && ./service-setup-test.sh
 
-test-usermanagementservice-unit:
-	cd src/usermanagementservice && go test -v ./... -short
+user-management-service-unittest:
+	cd src/usermanagementservice && go test -v `go list ./... | grep -v /genproto/`
 
-test-usermanagementservice-coverage:
-	cd src/usermanagementservice && go test -v ./... -coverprofile=coverage.out && go tool cover -html=coverage.out -o coverage.html
+user-management-service-coverage-unittest:
+	cd src/usermanagementservice && go test -v `go list ./... | grep -v /genproto/` -coverprofile=coverage.out && go tool cover -html=coverage.out -o coverage.html && rm coverage.out
 	@echo "Coverage report generated: src/usermanagementservice/coverage.html"
 
-# Add user management service tests to the overall test target
-run-tests: test-usermanagementservice

@@ -24,13 +24,13 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/grpc/status"
 
 	"github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres"
 	pb "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 // Variables for dependency injection in tests
@@ -53,27 +53,7 @@ var (
 			return nil // This line is never reached but helps with testing
 		}
 
-		// Check if migrations are enabled (disabled by default)
-		enableMigrations := false
-		if migrationsEnv := os.Getenv("ENABLE_MIGRATIONS"); migrationsEnv == "true" {
-			enableMigrations = true
-		}
-
-		// Create a user repository
-		userRepo := postgres.NewUserRepository(dbConn)
-
-		// Only run migrations if explicitly enabled
-		if enableMigrations {
-			log.Println("Migrations enabled. Running database migrations...")
-			if err := userRepo.EnsureTablesExist(); err != nil {
-				logFatalf("Failed to ensure database tables exist: %v", err)
-				osExit(1)
-				return nil // This line is never reached but helps with testing
-			}
-			log.Println("Database migrations completed successfully.")
-		} else {
-			log.Println("Migrations disabled. Skipping database migrations.")
-		}
+		// Migration code has been removed
 
 		return dbConn.DB
 	}
@@ -82,6 +62,19 @@ var (
 const (
 	defaultPort = "8082"
 )
+
+// HealthChecker implements the gRPC health check service
+type HealthChecker struct {
+	grpc_health_v1.UnimplementedHealthServer
+}
+
+func (s *HealthChecker) Check(ctx context.Context, req *grpc_health_v1.HealthCheckRequest) (*grpc_health_v1.HealthCheckResponse, error) {
+	return &grpc_health_v1.HealthCheckResponse{Status: grpc_health_v1.HealthCheckResponse_SERVING}, nil
+}
+
+func (s *HealthChecker) Watch(req *grpc_health_v1.HealthCheckRequest, ws grpc_health_v1.Health_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
+}
 
 func initTracer() *sdktrace.TracerProvider {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
@@ -119,19 +112,6 @@ func initDB() *sql.DB {
 	return dbProvider()
 }
 
-// HealthChecker implements the gRPC health check service
-type HealthChecker struct {
-	healthpb.UnimplementedHealthServer
-}
-
-func (s *HealthChecker) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
-}
-
-func (s *HealthChecker) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
-	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
-}
-
 func main() {
 	port := os.Getenv("USER_SVC_URL")
 	if port == "" {
@@ -148,6 +128,8 @@ func main() {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
 	}()
+
+	// Get tracer
 	tracer := tp.Tracer("usermanagementservice")
 
 	// Initialize database
@@ -178,7 +160,7 @@ func main() {
 
 	// Register services
 	pb.RegisterUserManagementServiceServer(grpcServer, authHandler)
-	healthpb.RegisterHealthServer(grpcServer, healthChecker)
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthChecker)
 	reflection.Register(grpcServer)
 
 	// Start server
