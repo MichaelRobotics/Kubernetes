@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
+	"github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres"
 	pb "github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo"
 )
 
