@@ -1003,3 +1003,136 @@ class FeatureFlagService(object):
             demo__pb2.DeleteFlagResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+
+class UserManagementServiceStub(object):
+    """-----------------User Management Service-----------------
+
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Register = channel.unary_unary(
+                '/oteldemo.UserManagementService/Register',
+                request_serializer=demo__pb2.RegisterRequest.SerializeToString,
+                response_deserializer=demo__pb2.RegisterResponse.FromString,
+                )
+        self.Login = channel.unary_unary(
+                '/oteldemo.UserManagementService/Login',
+                request_serializer=demo__pb2.LoginRequest.SerializeToString,
+                response_deserializer=demo__pb2.LoginResponse.FromString,
+                )
+        self.Health = channel.unary_unary(
+                '/oteldemo.UserManagementService/Health',
+                request_serializer=demo__pb2.HealthRequest.SerializeToString,
+                response_deserializer=demo__pb2.HealthResponse.FromString,
+                )
+
+
+class UserManagementServiceServicer(object):
+    """-----------------User Management Service-----------------
+
+    """
+
+    def Register(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Login(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Health(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_UserManagementServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Register': grpc.unary_unary_rpc_method_handler(
+                    servicer.Register,
+                    request_deserializer=demo__pb2.RegisterRequest.FromString,
+                    response_serializer=demo__pb2.RegisterResponse.SerializeToString,
+            ),
+            'Login': grpc.unary_unary_rpc_method_handler(
+                    servicer.Login,
+                    request_deserializer=demo__pb2.LoginRequest.FromString,
+                    response_serializer=demo__pb2.LoginResponse.SerializeToString,
+            ),
+            'Health': grpc.unary_unary_rpc_method_handler(
+                    servicer.Health,
+                    request_deserializer=demo__pb2.HealthRequest.FromString,
+                    response_serializer=demo__pb2.HealthResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'oteldemo.UserManagementService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+ # This class is part of an EXPERIMENTAL API.
+class UserManagementService(object):
+    """-----------------User Management Service-----------------
+
+    """
+
+    @staticmethod
+    def Register(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/oteldemo.UserManagementService/Register',
+            demo__pb2.RegisterRequest.SerializeToString,
+            demo__pb2.RegisterResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Login(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/oteldemo.UserManagementService/Login',
+            demo__pb2.LoginRequest.SerializeToString,
+            demo__pb2.LoginResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Health(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/oteldemo.UserManagementService/Health',
+            demo__pb2.HealthRequest.SerializeToString,
+            demo__pb2.HealthResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

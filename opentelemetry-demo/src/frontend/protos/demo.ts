@@ -254,6 +254,34 @@ export interface DeleteFlagRequest {
 export interface DeleteFlagResponse {
 }
 
+export interface RegisterRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  userId: number;
+  username: string;
+  message: string;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  userId: number;
+}
+
+export interface HealthRequest {
+}
+
+export interface HealthResponse {
+  status: string;
+}
+
 function createBaseCartItem(): CartItem {
   return { productId: "", quantity: 0 };
 }
@@ -3386,6 +3414,427 @@ export const DeleteFlagResponse: MessageFns<DeleteFlagResponse> = {
   },
 };
 
+function createBaseRegisterRequest(): RegisterRequest {
+  return { username: "", password: "" };
+}
+
+export const RegisterRequest: MessageFns<RegisterRequest> = {
+  encode(message: RegisterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.username !== "") {
+      writer.uint32(10).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(18).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RegisterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegisterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RegisterRequest {
+    return {
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: RegisterRequest): unknown {
+    const obj: any = {};
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RegisterRequest>, I>>(base?: I): RegisterRequest {
+    return RegisterRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RegisterRequest>, I>>(object: I): RegisterRequest {
+    const message = createBaseRegisterRequest();
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseRegisterResponse(): RegisterResponse {
+  return { userId: 0, username: "", message: "" };
+}
+
+export const RegisterResponse: MessageFns<RegisterResponse> = {
+  encode(message: RegisterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== 0) {
+      writer.uint32(8).int64(message.userId);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.message !== "") {
+      writer.uint32(26).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RegisterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegisterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.userId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RegisterResponse {
+    return {
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: RegisterResponse): unknown {
+    const obj: any = {};
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RegisterResponse>, I>>(base?: I): RegisterResponse {
+    return RegisterResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RegisterResponse>, I>>(object: I): RegisterResponse {
+    const message = createBaseRegisterResponse();
+    message.userId = object.userId ?? 0;
+    message.username = object.username ?? "";
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBaseLoginRequest(): LoginRequest {
+  return { username: "", password: "" };
+}
+
+export const LoginRequest: MessageFns<LoginRequest> = {
+  encode(message: LoginRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.username !== "") {
+      writer.uint32(10).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(18).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoginRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoginRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoginRequest {
+    return {
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: LoginRequest): unknown {
+    const obj: any = {};
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoginRequest>, I>>(base?: I): LoginRequest {
+    return LoginRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoginRequest>, I>>(object: I): LoginRequest {
+    const message = createBaseLoginRequest();
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseLoginResponse(): LoginResponse {
+  return { token: "", userId: 0 };
+}
+
+export const LoginResponse: MessageFns<LoginResponse> = {
+  encode(message: LoginResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    if (message.userId !== 0) {
+      writer.uint32(16).int64(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoginResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoginResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.userId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoginResponse {
+    return {
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+    };
+  },
+
+  toJSON(message: LoginResponse): unknown {
+    const obj: any = {};
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoginResponse>, I>>(base?: I): LoginResponse {
+    return LoginResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoginResponse>, I>>(object: I): LoginResponse {
+    const message = createBaseLoginResponse();
+    message.token = object.token ?? "";
+    message.userId = object.userId ?? 0;
+    return message;
+  },
+};
+
+function createBaseHealthRequest(): HealthRequest {
+  return {};
+}
+
+export const HealthRequest: MessageFns<HealthRequest> = {
+  encode(_: HealthRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): HealthRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHealthRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): HealthRequest {
+    return {};
+  },
+
+  toJSON(_: HealthRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<HealthRequest>, I>>(base?: I): HealthRequest {
+    return HealthRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<HealthRequest>, I>>(_: I): HealthRequest {
+    const message = createBaseHealthRequest();
+    return message;
+  },
+};
+
+function createBaseHealthResponse(): HealthResponse {
+  return { status: "" };
+}
+
+export const HealthResponse: MessageFns<HealthResponse> = {
+  encode(message: HealthResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.status !== "") {
+      writer.uint32(10).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): HealthResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHealthResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): HealthResponse {
+    return { status: isSet(object.status) ? globalThis.String(object.status) : "" };
+  },
+
+  toJSON(message: HealthResponse): unknown {
+    const obj: any = {};
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<HealthResponse>, I>>(base?: I): HealthResponse {
+    return HealthResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<HealthResponse>, I>>(object: I): HealthResponse {
+    const message = createBaseHealthResponse();
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
 export type CartServiceService = typeof CartServiceService;
 export const CartServiceService = {
   addItem: {
@@ -4066,6 +4515,100 @@ export const FeatureFlagServiceClient = makeGenericClientConstructor(
 ) as unknown as {
   new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): FeatureFlagServiceClient;
   service: typeof FeatureFlagServiceService;
+  serviceName: string;
+};
+
+export type UserManagementServiceService = typeof UserManagementServiceService;
+export const UserManagementServiceService = {
+  register: {
+    path: "/oteldemo.UserManagementService/Register",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: RegisterRequest) => Buffer.from(RegisterRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RegisterRequest.decode(value),
+    responseSerialize: (value: RegisterResponse) => Buffer.from(RegisterResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => RegisterResponse.decode(value),
+  },
+  login: {
+    path: "/oteldemo.UserManagementService/Login",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: LoginRequest) => Buffer.from(LoginRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => LoginRequest.decode(value),
+    responseSerialize: (value: LoginResponse) => Buffer.from(LoginResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => LoginResponse.decode(value),
+  },
+  health: {
+    path: "/oteldemo.UserManagementService/Health",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: HealthRequest) => Buffer.from(HealthRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => HealthRequest.decode(value),
+    responseSerialize: (value: HealthResponse) => Buffer.from(HealthResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => HealthResponse.decode(value),
+  },
+} as const;
+
+export interface UserManagementServiceServer extends UntypedServiceImplementation {
+  register: handleUnaryCall<RegisterRequest, RegisterResponse>;
+  login: handleUnaryCall<LoginRequest, LoginResponse>;
+  health: handleUnaryCall<HealthRequest, HealthResponse>;
+}
+
+export interface UserManagementServiceClient extends Client {
+  register(
+    request: RegisterRequest,
+    callback: (error: ServiceError | null, response: RegisterResponse) => void,
+  ): ClientUnaryCall;
+  register(
+    request: RegisterRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: RegisterResponse) => void,
+  ): ClientUnaryCall;
+  register(
+    request: RegisterRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: RegisterResponse) => void,
+  ): ClientUnaryCall;
+  login(
+    request: LoginRequest,
+    callback: (error: ServiceError | null, response: LoginResponse) => void,
+  ): ClientUnaryCall;
+  login(
+    request: LoginRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: LoginResponse) => void,
+  ): ClientUnaryCall;
+  login(
+    request: LoginRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: LoginResponse) => void,
+  ): ClientUnaryCall;
+  health(
+    request: HealthRequest,
+    callback: (error: ServiceError | null, response: HealthResponse) => void,
+  ): ClientUnaryCall;
+  health(
+    request: HealthRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: HealthResponse) => void,
+  ): ClientUnaryCall;
+  health(
+    request: HealthRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: HealthResponse) => void,
+  ): ClientUnaryCall;
+}
+
+export const UserManagementServiceClient = makeGenericClientConstructor(
+  UserManagementServiceService,
+  "oteldemo.UserManagementService",
+) as unknown as {
+  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): UserManagementServiceClient;
+  service: typeof UserManagementServiceService;
   serviceName: string;
 };
 
