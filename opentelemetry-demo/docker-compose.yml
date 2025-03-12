@@ -613,7 +613,7 @@ services:
     container_name: usermanagementservice
     build:
       context: ./
-      dockerfile: ${DB_DOCKERFILE}
+      dockerfile: ${USER_SVC_DOCKERFILE}
     ports:
       - "${USER_SVC_PORT}:${USER_SVC_PORT}"
     environment:
