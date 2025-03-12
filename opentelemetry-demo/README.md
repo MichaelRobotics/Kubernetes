@@ -64,15 +64,10 @@ DOCKER_COMPOSE_ENV=--env-file .env --env-file .env.override
 # Build and start the demo
 make build
 make start
-
-# Access the demo at http://localhost:8080
-
 # Run tests
 make run-tests
-
 # Rebuild and restart a specific service
 make redeploy service=frontend
-
 # Stop the demo
 make stop
 ```
