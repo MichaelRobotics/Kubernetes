@@ -89,7 +89,7 @@ services:
         condition: service_started
 
   tracetest-server:
-    image: ${TRACETEST_IMAGE}
+    image: kubeshop/tracetest:${TRACETEST_IMAGE_VERSION}
     platform: linux/amd64
     container_name: tracetest-server
     volumes:
