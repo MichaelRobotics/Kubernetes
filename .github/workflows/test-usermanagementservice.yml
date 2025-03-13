@@ -2,24 +2,28 @@ name: Test User Management Service
 
 on:
   push:
+    # Only trigger on branches other than main
+    branches-ignore:
+      - main
     paths:
+      # Include changes to the usermanagement service code
       - 'opentelemetry-demo/src/usermanagementservice/**'
+      # But exclude test files so changes to tests don't trigger the workflow
+      - '!opentelemetry-demo/src/usermanagementservice/test/**'
+      - '!opentelemetry-demo/src/usermanagementservice/**/*_test.go'
+      # Still include proto file as it affects the service
       - 'opentelemetry-demo/pb/demo.proto'
-  pull_request:
-    paths:
-      - 'opentelemetry-demo/src/usermanagementservice/**'
-      - 'opentelemetry-demo/pb/demo.proto'
-  workflow_dispatch:  # Allow manual triggering
+  # Remove pull_request trigger as per requirements
+  workflow_dispatch:  # Keep manual triggering
     inputs:
       test_scope:
         description: 'Scope of tests to run'
         required: true
-        default: 'all'
+        default: 'unit'
         type: choice
         options:
-          - all
           - unit
-          - coverage
+          - setup
       debug_enabled:
         description: 'Enable debug mode'
         required: false
@@ -75,21 +79,10 @@ jobs:
           echo "Directory structure:"
           find opentelemetry-demo/src/usermanagementservice -type f | sort
 
-      - name: Run all tests
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' }}
-        run: cd opentelemetry-demo && make test-usermanagementservice
-
-      - name: Run unit tests only
+      - name: Run unit tests
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit' }}
-        run: cd opentelemetry-demo && make test-usermanagementservice-unit
+        run: cd opentelemetry-demo && make user-management-service-unittest
 
-      - name: Generate coverage report
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
-        run: cd opentelemetry-demo && make test-usermanagementservice-coverage
-
-      - name: Upload coverage report
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.test_scope == 'all' || inputs.test_scope == 'coverage' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: opentelemetry-demo/src/usermanagementservice/coverage.html 
+      - name: Run setup test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'setup' }}
+        run: cd opentelemetry-demo && make user-management-service-setup-test
