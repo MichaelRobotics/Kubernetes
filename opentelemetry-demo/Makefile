@@ -136,12 +136,29 @@ clean-images:
 
 
 .PHONY: run-tests
+run-tests:
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run frontendTests
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run traceBasedTests
 
 .PHONY: run-tracetesting
 run-tracetesting:
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose-tests.yml run traceBasedTests ${SERVICES_TO_TEST}
+
+# User Management Service Tests
+.PHONY: run-usermanagement-tests
+run-usermanagement-tests:
+	@echo "Running User Management Integration Tests..."
+	@cd test/integration-tests/usermanagement-db && \
+	$(DOCKER_COMPOSE_CMD) -f docker-compose.yml up -d && \
+	sleep 5 && \
+	./generate-test-report.sh && \
+	$(DOCKER_COMPOSE_CMD) -f docker-compose.yml down --volumes --remove-orphans
+	@echo "Test report generated at test/integration-tests/usermanagement-db/test-reports/usermanagement-test-report.html"
+
+# Combined test target
+.PHONY: run-all-tests
+run-all-tests: run-tests run-usermanagement-tests
+	@echo "All tests completed"
 
 .PHONY: generate-protobuf
 generate-protobuf:

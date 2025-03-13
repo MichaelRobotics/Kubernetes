@@ -1,0 +1,19 @@
+FROM golang:1.19-alpine
+
+WORKDIR /app
+
+# Install necessary packages
+RUN apk add --no-cache bash curl docker
+
+# Copy test files
+COPY ./tests ./tests
+COPY ./generate-test-report.sh .
+
+# Set execute permissions
+RUN chmod +x ./generate-test-report.sh
+
+# Create directory for test reports
+RUN mkdir -p test-reports
+
+# Set entrypoint
+ENTRYPOINT ["./generate-test-report.sh"] 
