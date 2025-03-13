@@ -5,6 +5,8 @@ cleanup() {
     echo "Cleaning up resources..."
     echo "Stopping and removing containers..."
     docker-compose down
+    echo "Stopping and removing database containers..."
+    (cd ../db && docker-compose down)
     echo "Resources cleaned up."
 }
 
@@ -25,6 +27,25 @@ set +a
 # Stop any existing containers
 docker-compose down 
 
+# Create and start the database first
+echo "Setting up database..."
+(cd ../db && docker-compose up -d)
+
+# Wait for database to be ready
+echo "Waiting for database to be healthy..."
+for i in {1..15}; do
+  health_status=$(docker inspect --format='{{.State.Health.Status}}' postgres 2>/dev/null)
+  
+  if [ "$health_status" = "healthy" ]; then
+    echo "Database is healthy!"
+    break
+  fi
+  
+  echo "Waiting for database to be healthy... (attempt $i/15)"
+  sleep 2
+done
+
+# Start the usermanagement service
 docker-compose up -d
 
 # Check if the service is healthy

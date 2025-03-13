@@ -33,7 +33,7 @@ services:
 
 networks:
   usermgmt-network:
-    name: opentelemetry-demo
+    name: integration-test
 
 volumes:
   postgres_data:

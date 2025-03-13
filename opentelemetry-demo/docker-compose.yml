@@ -639,7 +639,7 @@ services:
           memory: 128M
     logging: *logging
     
-  # PostgreSQL volume
+  
   # ******************
   # Dependent Services
   # ******************
