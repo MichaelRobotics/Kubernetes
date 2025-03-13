@@ -64,7 +64,6 @@ jobs:
       - name: Install dependencies
         run: |
           cd opentelemetry-demo
-          make install-tools
           cd src/usermanagementservice
           go get github.com/stretchr/testify/assert
           go get github.com/stretchr/testify/mock
