@@ -1,0 +1,6 @@
+[submodule "GKE/kubernetes-engine-samples"]
+	path = GKE/kubernetes-engine-samples
+	url = https://github.com/GoogleCloudPlatform/kubernetes-engine-samples
+[submodule "Helm/Helmfile/Helm/Helmfile/helmfile-demo"]
+	path = Helm/Helmfile/Helm/Helmfile/helmfile-demo
+	url = https://github.com/vfarcic/helmfile-demo

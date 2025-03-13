@@ -1,7 +1,7 @@
 ========================================================
 USER MANAGEMENT SERVICE TEST REPORT
 ========================================================
-Generated on: 2025-03-13 23:29:16
+Generated on: 2025-03-13 23:42:08
 
 SUMMARY:
 --------
@@ -40,7 +40,7 @@ TestJWTTokenRevocation: ⏩ SKIPPED
   - Feature should be considered for security
 Edge Case Tests:
 TestDataPersistence: ✅ PASS
-  - 19
+  - 189
   - Database integrity maintained
 
 Performance Tests: 

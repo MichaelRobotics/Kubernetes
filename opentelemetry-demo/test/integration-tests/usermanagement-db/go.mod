@@ -19,3 +19,8 @@ require (
 )
 
 replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo => ../../../src/usermanagementservice/genproto/oteldemo
+
+// Add additional replacements for needed modules
+replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice => ../../../src/usermanagementservice
+replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/handlers => ../../../src/usermanagementservice/handlers
+replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/tests/mocks => ../../../src/usermanagementservice/tests/mocks

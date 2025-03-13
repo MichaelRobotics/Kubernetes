@@ -1,0 +1,225 @@
+name: "Custom CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'opentelemetry-demo/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for images'
+        required: true
+        default: 'latest'
+        type: string
+
+# Define global defaults
+env:
+  OPENTELEMETRY_CPP_VERSION: 1.11.0
+  OTEL_JAVA_AGENT_VERSION: 1.30.0
+  IMAGE_NAME: robclusterdev/clusterimages
+  DEMO_VERSION: otel-demo
+  IMAGE_VERSION_DEFAULT: latest
+
+defaults:
+  run:
+    working-directory: opentelemetry-demo
+
+jobs:
+  setup-env:
+    runs-on: ubuntu-latest
+    outputs:
+      env_vars: ${{ steps.set-env.outputs.env_vars }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Load and set environment variables
+        id: set-env
+        run: |
+          # Initialize a JSON object for environment variables
+          ENV_JSON='{}'
+          
+          # Load defaults from workflow env
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.OPENTELEMETRY_CPP_VERSION }}" '.OPENTELEMETRY_CPP_VERSION = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.OTEL_JAVA_AGENT_VERSION }}" '.OTEL_JAVA_AGENT_VERSION = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.IMAGE_NAME }}" '.IMAGE_NAME = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.DEMO_VERSION }}" '.DEMO_VERSION = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.IMAGE_VERSION_DEFAULT }}" '.IMAGE_VERSION = $val')
+          
+          # Load .env if it exists
+          if [ -f .env ]; then
+            while IFS='=' read -r key value; do
+              if [[ ! $key =~ ^\s*# && ! -z $key ]]; then
+                value=$(echo "$value" | sed 's/^"\(.*\)"$/\1/')
+                ENV_JSON=$(echo "$ENV_JSON" | jq --arg k "$key" --arg v "$value" '.[$k] = $v')
+              fi
+            done < <(grep -vE '^\s*#|^\s*$' .env)
+          fi
+          
+          # Load .env.override if it exists
+          if [ -f .env.override ]; then
+            while IFS='=' read -r key value; do
+              if [[ ! $key =~ ^\s*# && ! -z $key ]]; then
+                value=$(echo "$value" | sed 's/^"\(.*\)"$/\1/')
+                ENV_JSON=$(echo "$ENV_JSON" | jq --arg k "$key" --arg v "$value" '.[$k] = $v')
+              fi
+            done < <(grep -vE '^\s*#|^\s*$' .env.override)
+          fi
+          
+          # Output the JSON for downstream jobs
+          echo "env_vars=$(echo "$ENV_JSON" | jq -c .)" >> $GITHUB_OUTPUT
+
+  protobufcheck:
+    runs-on: ubuntu-latest
+    needs: setup-env
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Apply environment variables
+        run: |
+          # Parse JSON and apply to GITHUB_ENV
+          echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+      
+      - name: Generate Protobuf
+        run: make docker-generate-protobuf
+      
+      - name: Check Clean Work Tree
+        run: make check-clean-work-tree
+
+  build_and_push_images:
+    runs-on: ubuntu-latest
+    needs: [setup-env, protobufcheck]
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        file_tag:
+          - { file: ./src/accounting/Dockerfile, tag_suffix: otel-demo-accounting, context: ./ }
+          - { file: ./src/ad/Dockerfile, tag_suffix: otel-demo-ad, context: ./ }
+          - { file: ./src/cart/src/Dockerfile, tag_suffix: otel-demo-cart, context: ./ }
+          - { file: ./src/checkout/Dockerfile, tag_suffix: otel-demo-checkout, context: ./ }
+          - { file: ./src/currency/Dockerfile, tag_suffix: otel-demo-currency, context: ./ }
+          - { file: ./src/email/Dockerfile, tag_suffix: otel-demo-email, context: ./ }
+          - { file: ./src/fraud-detection/Dockerfile, tag_suffix: otel-demo-fraud-detection, context: ./ }
+          - { file: ./src/frontend/Dockerfile, tag_suffix: otel-demo-frontend, context: ./ }
+          - { file: ./src/frontend-proxy/Dockerfile, tag_suffix: otel-demo-frontend-proxy, context: ./ }
+          - { file: ./src/image-provider/Dockerfile, tag_suffix: otel-demo-image-provider, context: ./ }
+          - { file: ./src/payment/Dockerfile, tag_suffix: otel-demo-payment, context: ./ }
+          - { file: ./src/product-catalog/Dockerfile, tag_suffix: otel-demo-product-catalog, context: ./ }
+          - { file: ./src/quote/Dockerfile, tag_suffix: otel-demo-quote, context: ./ }
+          - { file: ./src/recommendation/Dockerfile, tag_suffix: otel-demo-recommendation, context: ./ }
+          - { file: ./src/shipping/Dockerfile, tag_suffix: otel-demo-shipping, context: ./ }
+          - { file: ./src/flagd-ui/Dockerfile, tag_suffix: otel-demo-flagd-ui, context: ./ }
+          - { file: ./src/usermanagementservice/Dockerfile, tag_suffix: otel-demo-usermanagementservice, context: ./ }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Apply environment variables
+        run: |
+          # Parse JSON and apply to GITHUB_ENV
+          echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Determine version
+        id: version
+        run: echo "VERSION=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || env.IMAGE_VERSION }}" >> $GITHUB_OUTPUT
+      
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v6
+        with:
+          context: opentelemetry-demo/${{ matrix.file_tag.context }}
+          file: opentelemetry-demo/${{ matrix.file_tag.file }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ matrix.file_tag.tag_suffix }}
+            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}-${{ matrix.file_tag.tag_suffix }}
+          build-args: |
+            OTEL_JAVA_AGENT_VERSION=${{ env.OTEL_JAVA_AGENT_VERSION }}
+            OPENTELEMETRY_CPP_VERSION=${{ env.OPENTELEMETRY_CPP_VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  integration_tests:
+    runs-on: ubuntu-latest
+    needs: [setup-env, build_and_push_images]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Apply environment variables
+        run: |
+          # Parse JSON and apply to GITHUB_ENV
+          echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+      
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      
+      - name: Run integration tests
+        env:
+          IMAGE_VERSION: ${{ needs.build_and_push_images.outputs.version }}
+        run: |
+          # Write minimal .env for docker-compose
+          echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env
+          echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env
+          echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env
+          
+          docker compose pull
+          docker compose up -d
+          echo "Waiting for services to be ready..."
+          sleep 30
+          make run-tracetesting
+          docker compose down
+      
+      - name: Report Test Results
+        if: always()
+        run: |
+          echo "Integration test results:"
+          [ $? -eq 0 ] && echo "✅ All tests passed" || { echo "❌ Tests failed"; exit 1; }
+
+  deploy_demo:
+    runs-on: ubuntu-latest
+    needs: [setup-env, integration_tests]
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Apply environment variables
+        run: |
+          # Parse JSON and apply to GITHUB_ENV
+          echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+      
+      - name: Update environment files for deployment
+        run: |
+          echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env
+          echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env
+          echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env
+          
+          echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env.override
+          echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env.override
+          echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env.override
+      
+      - name: Display successful completion message
+        run: |
+          echo "=========================="
+          echo "CI/CD Pipeline Completed!"
+          echo "=========================="
+          echo "All images have been built and pushed to: ${{ env.IMAGE_NAME }}"
+          echo "To deploy the application:"
+          echo "1. Pull this repository"
+          echo "2. Navigate to opentelemetry-demo"
+          echo "3. Run 'make start'"
+          echo "The application will use your custom images from ${{ env.IMAGE_NAME }}"

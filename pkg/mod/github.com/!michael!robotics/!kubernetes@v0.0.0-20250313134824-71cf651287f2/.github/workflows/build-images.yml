@@ -1,0 +1,13 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+name: Test image generation
+
+on:
+  pull_request:
+    paths:
+      - 'opentelemetry-demo/src/**'
+      - 'opentelemetry-demo/test/**'
+
+jobs:
+  build_images:
+    uses: ./.github/workflows/component-build-images.yml

@@ -1,0 +1,6 @@
+go 1.22.1
+
+use (
+	./src/usermanagementservice
+	./test/integration-tests/usermanagement-db
+)

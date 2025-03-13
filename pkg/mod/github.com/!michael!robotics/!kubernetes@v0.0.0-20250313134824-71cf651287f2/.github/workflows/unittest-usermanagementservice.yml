@@ -1,0 +1,87 @@
+name: Test User Management Service
+
+on:
+  push:
+    # Only trigger on branches other than main
+    branches-ignore:
+      - main
+    paths:
+      # Include changes to the usermanagement service code
+      - 'opentelemetry-demo/src/usermanagementservice/**'
+      # But exclude test files so changes to tests don't trigger the workflow
+      - '!opentelemetry-demo/src/usermanagementservice/test/**'
+      - '!opentelemetry-demo/src/usermanagementservice/**/*_test.go'
+      # Still include proto file as it affects the service
+      - 'opentelemetry-demo/pb/demo.proto'
+  # Remove pull_request trigger as per requirements
+  workflow_dispatch:  # Keep manual triggering
+    inputs:
+      test_scope:
+        description: 'Scope of tests to run'
+        required: true
+        default: 'unit'
+        type: choice
+        options:
+          - unit
+          - setup
+      debug_enabled:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+          cache: true
+      
+      - name: Install Protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Generate Protobuf
+        run: |
+          cd opentelemetry-demo/src/usermanagementservice
+          mkdir -p genproto/oteldemo
+          protoc --go_out=. \
+                 --go-grpc_out=. \
+                 --proto_path=../../pb \
+                 ../../pb/demo.proto
+
+      - name: Install dependencies
+        run: |
+          cd opentelemetry-demo
+          cd src/usermanagementservice
+          go get github.com/stretchr/testify/assert
+          go get github.com/stretchr/testify/mock
+          go get github.com/DATA-DOG/go-sqlmock
+          go mod tidy
+
+      - name: Debug Info
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
+        run: |
+          echo "Running in debug mode"
+          echo "Go version: $(go version)"
+          echo "Directory structure:"
+          find opentelemetry-demo/src/usermanagementservice -type f | sort
+
+      - name: Run unit tests
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit' }}
+        run: cd opentelemetry-demo && make user-management-service-unittest
+
+      - name: Run setup test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'setup' }}
+        run: cd opentelemetry-demo && make user-management-service-setup-test

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Enable debug mode for detailed output
+set -x
+
+# Create a temporary directory and navigate into it
+cd "$(mktemp -d)" || exit 1
+
+# Detect the operating system and architecture
+OS="$(uname | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
+
+# Define the krew binary name based on OS and architecture
+KREW="krew-${OS}_${ARCH}"
+
+# Download the krew binary
+curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz"
+
+# Extract the krew binary
+tar zxvf "${KREW}.tar.gz"
+
+# Install krew
+./"${KREW}" install krew
+
+# Add krew's binary directory to the PATH
+echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> ~/.bashrc
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+# Install the 'tree' plugin using krew
+kubectl krew install tree
+
+# Confirm installation
+kubectl tree --help

@@ -1,0 +1,26 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+name: Integration Tests
+
+on:
+  pull_request_review:
+    types:
+      - submitted
+  pull_request:
+    paths:
+      - 'opentelemetry-demo/**'
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    name: "Run CI"
+    if: github.event.review.state == 'APPROVED'
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
+    steps:
+      - name: check out code
+        uses: actions/checkout@v4
+      - name: run tracetesting
+        run: |
+          make build && docker system prune -f && make run-tracetesting

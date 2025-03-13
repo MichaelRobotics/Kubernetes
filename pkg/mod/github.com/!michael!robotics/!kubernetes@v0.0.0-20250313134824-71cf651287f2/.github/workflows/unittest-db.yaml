@@ -1,0 +1,63 @@
+name: Test Database Service
+
+on:
+  push:
+    # Only trigger on branches other than main
+    branches-ignore:
+      - main
+    paths:
+      # Include changes to the db directory
+      - 'opentelemetry-demo/src/db/**'
+      # But exclude test files so changes to tests don't trigger the workflow
+      - '!opentelemetry-demo/src/db/test/**'
+      - '!opentelemetry-demo/src/db/testutils/**'
+      - '!opentelemetry-demo/src/db/**/*_test.go'
+  # Manual triggering
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Scope of tests to run'
+        required: true
+        default: 'unit'
+        type: choice
+        options:
+          - unit
+          - setup
+      debug_enabled:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test:
+    name: Run Database Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Debug Info
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
+        run: |
+          echo "Running in debug mode"
+          echo "Go version: $(go version)"
+          echo "Directory structure:"
+          find opentelemetry-demo/src/db -type f | sort
+
+      # Run all tests for push events to source code (not tests)
+      - name: Run unit tests
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit') }}
+        run: cd opentelemetry-demo && make db-unittest
+
+      # Run setup tests
+      - name: Run setup test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'setup' }}
+        run: cd opentelemetry-demo && make db-setup-test

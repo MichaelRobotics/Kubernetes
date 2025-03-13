@@ -1,0 +1,45 @@
+# helmfile.yaml
+
+environments:
+  prod:
+    values:
+      - values-prod.yaml  # Values specific to the prod environment
+  stage:
+    values:
+      - values-stage.yaml  # Values specific to the stage environment
+  dev:
+    values:
+      - values-dev.yaml  # Values specific to the dev environment
+
+---
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+
+releases:
+  - name: prometheus
+    namespace: monitoring
+    chart: prometheus-community/prometheus
+    version: "14.8.0"
+    values:
+      - values-common.yaml  # Common values shared across environments
+    hooks:
+      - events: ["prepare"]
+        command: "./pre-deploy-prometheus.sh"
+        showlogs: true
+
+  - name: myapp
+    chart: bitnami/nginx
+    namespace: default
+    values:
+      - values-common.yaml  # Common values shared across environments
+    set:
+      - name: image.tag
+        value: "1.21.0"
+    hooks:
+      - events: ["prepare"]
+        command: "./pre-deploy-nginx.sh"
+        showlogs: true

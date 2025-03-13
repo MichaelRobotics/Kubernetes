@@ -1,0 +1,40 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: michael
+  labels:
+    app: michael
+    component: web
+spec:
+  selector:
+    matchLabels:
+      app: michael
+      component: web
+  template:
+    metadata:
+      labels:
+        app: michael
+        component: web
+    spec:
+      containers:
+      - name: michael
+        image: vfarcic/devops-toolkit-series:2.7.0
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi

@@ -1,0 +1,25 @@
+# Application-specific values for Helm chart deployment
+replicaCount: 1
+
+image:
+  repository: bitnami/nginx
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  path: "/"
+  hosts:
+    - "myapp.example.com"
+
+resources:
+  limits:
+    cpu: "100m"
+    memory: "256Mi"
+  requests:
+    cpu: "50m"
+    memory: "128Mi"

@@ -1,0 +1,30 @@
+# values-prometheus.yaml
+alertmanager:
+  enabled: true
+  replicas: 2
+
+server:
+  global:
+    scrape_interval: 15s
+  persistentVolume:
+    enabled: true
+    size: 50Gi
+  replicaCount: 3
+
+pushgateway:
+  enabled: true
+  replicaCount: 1
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheusSpec:
+  storageSpec:
+    volumeClaimTemplate:
+      spec:
+        resources:
+          requests:
+            storage: 50Gi
