@@ -59,6 +59,57 @@ spec:
 EOF
 }
 
+# New function to wait for services to be fully initialized
+wait_for_services() {
+  echo "Waiting for services to fully initialize..."
+  
+  # First, wait a fixed amount of time to allow services to start up
+  echo "Initial delay to ensure services have time to initialize..."
+  sleep 30
+  
+  # Check if frontend is responding
+  echo "Checking if frontend service is fully ready..."
+  max_retries=10
+  retry_count=0
+  while [ $retry_count -lt $max_retries ]; do
+    if curl -s -o /dev/null -w "%{http_code}" http://$FRONTEND_ADDR | grep -q "200"; then
+      echo "Frontend service is responding!"
+      break
+    else
+      retry_count=$((retry_count+1))
+      if [ $retry_count -eq $max_retries ]; then
+        echo "Warning: Frontend service did not respond after $max_retries attempts, but continuing anyway..."
+      else
+        echo "Waiting for frontend service to respond... (attempt $retry_count/$max_retries)"
+        sleep 5
+      fi
+    fi
+  done
+  
+  # Check if ad service is ready by testing a simple request
+  echo "Checking if ad service is fully ready..."
+  retry_count=0
+  while [ $retry_count -lt $max_retries ]; do
+    if curl -s -X GET http://$FRONTEND_ADDR/api/data -H "Content-Type: application/json" -d '{"contextKeys":["test"]}' | grep -q "redirectUrl"; then
+      echo "Ad service integration is working!"
+      break
+    else
+      retry_count=$((retry_count+1))
+      if [ $retry_count -eq $max_retries ]; then
+        echo "Warning: Ad service integration did not respond correctly after $max_retries attempts, but continuing anyway..."
+      else
+        echo "Waiting for ad service integration to be ready... (attempt $retry_count/$max_retries)"
+        sleep 5
+      fi
+    fi
+  done
+  
+  # Final delay to ensure everything is stable
+  echo "Final stabilization delay..."
+  sleep 5
+  echo "Services should be ready now. Starting tests..."
+}
+
 run_tracetest() {
   service_name=$1
   testsuite_file=./$service_name/all.yaml
@@ -81,6 +132,9 @@ fi
 
 check_if_tracetest_is_installed
 create_env_file
+
+# Wait for services to be ready before running tests
+wait_for_services
 
 echo "Starting tests..."
 echo "Running trace-based tests for: ${chosen_services[*]} ..."
