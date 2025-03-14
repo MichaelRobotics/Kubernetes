@@ -97,7 +97,8 @@
 <body>
     <div class="container">
         <h1>User Management Service Test Report</h1>
-        <p class="timestamp">Generated on: 2025-03-14 15:58:57</p>
+        <p class="timestamp">Generated on: 2025-03-14 19:45:01</p>
+        
         <div class="summary">
             <div class="summary-item pass">
                 <h3>PASSED</h3>
@@ -113,7 +114,7 @@
             </div>
             <div class="summary-item time">
                 <h3>EXECUTION TIME</h3>
-                <div class="number">22.654s</div>
+                <div class="number">22.659s</div>
             </div>
         </div>
         
@@ -222,7 +223,7 @@
     advanced_security_test.go:172: Login 3 successful, received token: eyJhbGciOiJIUzI1NiIs...
     advanced_security_test.go:185: Service reuses tokens for multiple logins (issued 3 tokens, but 2 are unique)
     advanced_security_test.go:193: Note: To fully test session invalidation, try using earlier tokens after multiple logins
---- PASS: TestMultipleLogins (0.51s)
+--- PASS: TestMultipleLogins (0.50s)
 === RUN   TestMalformedRequests
     api_error_handling_test.go:32: Service correctly rejected extremely long username: rpc error: code = Internal desc = failed to create user: pq: value too long for type character varying(255)
     api_error_handling_test.go:62: Service accepted problematic username '<script>alert('xss')</script>' and login succeeded with user ID: 4
@@ -240,7 +241,7 @@
     api_error_handling_test.go:134: Service correctly rejected login with empty password: rpc error: code = NotFound desc = user not found
 --- PASS: TestMissingRequiredFields (0.00s)
 === RUN   TestComprehensiveUserManagement
-    comprehensive_test.go:23: Testing comprehensive user management flow for user: comprehensive_user_1741964316061329593
+    comprehensive_test.go:23: Testing comprehensive user management flow for user: comprehensive_user_1741977879929824269
     comprehensive_test.go:34: User registered successfully with ID: 11
     comprehensive_test.go:45: Login successful, received token: eyJhbGciOiJIUzI1NiIs...
     comprehensive_test.go:57: Correctly rejected duplicate registration: rpc error: code = AlreadyExists desc = username already exists
@@ -251,7 +252,7 @@
     comprehensive_test.go:124: Registration with special characters in username succeeded, user ID: 13
     comprehensive_test.go:135: Login with special characters in username succeeded
     comprehensive_test.go:140: Comprehensive test completed successfully
---- PASS: TestComprehensiveUserManagement (0.85s)
+--- PASS: TestComprehensiveUserManagement (0.86s)
 === RUN   TestConcurrentOperations
     concurrent_operations_test.go:64: Successfully processed 5 concurrent users
 --- PASS: TestConcurrentOperations (0.11s)
@@ -281,13 +282,13 @@
     edge_cases_test.go:68: Successfully logged in with Unicode username 'مستخدم', token: eyJhbGciOiJIUzI1NiIs...
     edge_cases_test.go:56: Successfully registered user with Unicode username '😀👍🔥', user ID: 28
     edge_cases_test.go:68: Successfully logged in with Unicode username '😀👍🔥', token: eyJhbGciOiJIUzI1NiIs...
---- PASS: TestUnicodeCharacters (0.81s)
+--- PASS: TestUnicodeCharacters (0.82s)
 === RUN   TestMaxConnections
     edge_cases_test.go:86: Testing with 100 concurrent connections
-    edge_cases_test.go:140: Max connections test completed in 500.880615ms
+    edge_cases_test.go:140: Max connections test completed in 510.686902ms
     edge_cases_test.go:141: Successful connections: 100/100
     edge_cases_test.go:142: Failed connections: 0/100
---- PASS: TestMaxConnections (0.50s)
+--- PASS: TestMaxConnections (0.51s)
 === RUN   TestDatabaseRecovery
     edge_cases_test.go:161: Database recovery test requires direct access to database container controls
 --- SKIP: TestDatabaseRecovery (0.00s)
@@ -323,21 +324,21 @@
 === RUN   TestPerformance
     performance_test.go:29: Starting performance test with 20 concurrent users
     performance_test.go:116: Performance Test Results:
-    performance_test.go:117:   - Test duration: 212.289091ms
+    performance_test.go:117:   - Test duration: 221.164555ms
     performance_test.go:118:   - Successful operations: 20/20
-    performance_test.go:119:   - Average registration time: 97.440658ms
-    performance_test.go:120:   - Average login time: 79.092951ms
-    performance_test.go:121:   - Average combined time: 176.533609ms
+    performance_test.go:119:   - Average registration time: 101.858059ms
+    performance_test.go:120:   - Average login time: 77.503548ms
+    performance_test.go:121:   - Average combined time: 179.361607ms
     performance_test.go:128: Performance is within acceptable threshold
---- PASS: TestPerformance (0.21s)
+--- PASS: TestPerformance (0.22s)
 === RUN   TestRateLimiting
-    rate_limiting_test.go:83: Rate limiting test results (total time: 273.08976ms):
+    rate_limiting_test.go:83: Rate limiting test results (total time: 267.763892ms):
     rate_limiting_test.go:84:   - Successful requests: 50
     rate_limiting_test.go:85:   - Rate-limited requests: 0
     rate_limiting_test.go:86:   - Other errors: 0
-    rate_limiting_test.go:91: No rate limiting detected for 50 concurrent requests in 273.08976ms
-    rate_limiting_test.go:93: Warning: All 50 requests completed in 273.08976ms without rate limiting
---- PASS: TestRateLimiting (0.33s)
+    rate_limiting_test.go:91: No rate limiting detected for 50 concurrent requests in 267.763892ms
+    rate_limiting_test.go:93: Warning: All 50 requests completed in 267.763892ms without rate limiting
+--- PASS: TestRateLimiting (0.32s)
 === RUN   TestSQLInjectionProtection
     sql_injection_test.go:43: SQL injection pattern rejected in login: ' OR '1'='1 - rpc error: code = NotFound desc = user not found
     sql_injection_test.go:43: SQL injection pattern rejected in login: admin'; -- - rpc error: code = NotFound desc = user not found
@@ -351,18 +352,18 @@
     sql_injection_test.go:43: SQL injection pattern rejected in login: ' or 1 --' - rpc error: code = NotFound desc = user not found
     sql_injection_test.go:43: SQL injection pattern rejected in login: ' or 1/* - rpc error: code = NotFound desc = user not found
     sql_injection_test.go:43: SQL injection pattern rejected in login: ' or '1'='1'-- - rpc error: code = NotFound desc = user not found
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' OR '1'='1_1741964334864386225_0 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: admin'; --_1741964334966487140_1 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: username' OR 1=1; --_1741964335068422089_2 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: '; DROP TABLE users; --_1741964335170275119_3 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' UNION SELECT username, password FROM users; --_1741964335272021415_4 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: 1' or '1' = '1_1741964335372947490_5 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: 1' or 1=1--_1741964335474289173_6 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or 1=1--_1741964335576052824_7 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or ''='_1741964335679410209_8 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or 1 --'_1741964335781413267_9 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or 1/*_1741964335883547187_10 (and login succeeded)
-    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or '1'='1'--_1741964335985306947_11 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' OR '1'='1_1741977898750815770_0 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: admin'; --_1741977898853708527_1 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: username' OR 1=1; --_1741977898955223815_2 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: '; DROP TABLE users; --_1741977899056162398_3 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' UNION SELECT username, password FROM users; --_1741977899157892731_4 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: 1' or '1' = '1_1741977899259658866_5 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: 1' or 1=1--_1741977899361487236_6 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or 1=1--_1741977899463148152_7 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or ''='_1741977899564778370_8 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or 1 --'_1741977899666442930_9 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or 1/*_1741977899767475274_10 (and login succeeded)
+    sql_injection_test.go:65: Registration allowed potentially dangerous username: ' or '1'='1'--_1741977899868833262_11 (and login succeeded)
     sql_injection_test.go:96: SQL injection pattern in password correctly rejected: ' OR '1'='1 - rpc error: code = Unauthenticated desc = invalid password
     sql_injection_test.go:96: SQL injection pattern in password correctly rejected: admin'; -- - rpc error: code = Unauthenticated desc = invalid password
     sql_injection_test.go:96: SQL injection pattern in password correctly rejected: username' OR 1=1; -- - rpc error: code = Unauthenticated desc = invalid password
@@ -380,11 +381,11 @@
     token_expiration_test.go:86: Token is valid for approximately 1h0m0s
 --- PASS: TestTokenExpiration (0.11s)
 === RUN   TestTokenValidation
-    token_validation_test.go:47: Token has correct JWT format: eyJhbGci.eyJleHAi.pZab4tYd
+    token_validation_test.go:47: Token has correct JWT format: eyJhbGci.eyJleHAi.AF7agGok
     token_validation_test.go:54: Token might not contain user ID 172
 --- PASS: TestTokenValidation (0.10s)
 === RUN   TestRegisterLoginFlow
-    user_flow_test.go:70: User registered and logged in successfully with user_id: 173 and token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDE5Njc5MzcsInN1YiI6MTczfQ.ORhz7nM8hAC2v6KuX48Y3jfQvWa-7UHKKXMtlmj14Hc
+    user_flow_test.go:70: User registered and logged in successfully with user_id: 173 and token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDE5ODE1MDAsInN1YiI6MTczfQ.40GWV-Wm_cUNs7joJi5nQGsNero1nPsDmLtHEfBAm4g
 --- PASS: TestRegisterLoginFlow (0.10s)
 === RUN   TestUsernameValidation
     username_validation_test.go:23: Correctly rejected empty username: rpc error: code = InvalidArgument desc = username must be at least 3 characters
@@ -395,7 +396,7 @@
     username_validation_test.go:46: Service accepts special characters in username: user;name
 --- PASS: TestUsernameValidation (0.26s)
 PASS
-ok  	github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/test/integration-tests/usermanagement-db/tests	22.654s</pre>
+ok  	github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/test/integration-tests/usermanagement-db/tests	22.659s</pre>
         
         <h2>Key Findings</h2>
         <ul>
