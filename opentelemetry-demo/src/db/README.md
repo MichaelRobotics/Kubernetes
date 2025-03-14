@@ -1,6 +1,7 @@
 # PostgreSQL Database for OpenTelemetry Demo
 
-PostgreSQL database service with automatic migrations for the OpenTelemetry Demo's user management.
+PostgreSQL database service with automatic migrations for the OpenTelemetry
+Demo's user management.
 
 ## Quick Start
 
@@ -11,23 +12,26 @@ docker-compose up -d
 
 ## Network Configuration
 
-The database service creates the `opentelemetry-demo` network which is shared with the 
-`usermanagementservice`. This network allows containers to communicate using their service names
-as hostnames.
+The database service creates the `opentelemetry-demo` network which is shared
+with the `usermanagementservice`. This network allows containers to communicate
+using their service names as hostnames.
 
 ## Connection String
 
 Connect to the database using:
-```
+
+```sql
 postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
 ```
 
 For local development:
+
 ```bash
 export DB_CONN="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 ```
 
-The hostname `postgres` resolves via Docker networking when services are on the same network.
+The hostname `postgres` resolves via Docker networking when services are on the
+same network.
 
 ## Environment Variables
 
@@ -47,7 +51,7 @@ The hostname `postgres` resolves via Docker networking when services are on the 
 
 ## Directory Structure
 
-```
+```text
 /src/db/
 ├── docker-compose.yml          # PostgreSQL configuration
 ├── migrations/                 # Database schema files
@@ -63,14 +67,16 @@ The hostname `postgres` resolves via Docker networking when services are on the 
 ## Testing
 
 Run the database test script to verify connectivity:
+
 ```bash
 ./db-setup-test.sh
 ```
 
 This will:
+
 1. Start the database container
 2. Verify database connection
 3. Run smoke tests
 4. Clean up automatically upon completion
 
-For more details, see the [migrations README](migrations/README.md). 
+For more details, see the [migrations README](migrations/README.md).

@@ -43,10 +43,10 @@ misspell-correction:	$(MISSPELL)
 
 .PHONY: markdownlint
 markdownlint:
-	@if ! npm ls markdownlint; then npm install; fi
+	@echo "Running markdownlint with Docker (Node.js 18)..."
 	@for f in $(ALL_DOCS); do \
 		echo $$f; \
-		npx --no -p markdownlint-cli markdownlint -c .markdownlint.yaml $$f \
+		docker run --rm -v $(PWD):/app -w /app node:18 npx --yes markdownlint-cli $$f -c .markdownlint.yaml \
 			|| exit 1; \
 	done
 
