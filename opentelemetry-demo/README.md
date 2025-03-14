@@ -1,6 +1,9 @@
+# OpenTelemetry Demo
+
 ## 🛠️ Makefile Guide
 
-The Makefile serves as the main interface for working with this project. Below is a detailed breakdown of available commands:
+The Makefile serves as the main interface for working with this project.
+Below is a detailed breakdown of available commands:
 
 ### Setup and Configuration
 
