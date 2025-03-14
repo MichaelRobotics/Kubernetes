@@ -63,13 +63,24 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd opentelemetry-demo
-          cd src/usermanagementservice
-          go get github.com/stretchr/testify/assert
-          go get github.com/stretchr/testify/mock
-          go get github.com/DATA-DOG/go-sqlmock
+          cd opentelemetry-demo/src/usermanagementservice
+          # Replace imports with local paths
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo=./genproto/oteldemo
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres=../db/postgres
           go mod tidy
-
+              
+          # Also set up replacements in other module files
+          cd genproto/oteldemo
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice=../../
+          go mod tidy
+              
+          # If you have tests module, set up replacements there too
+          cd ../../../test/integration-tests/usermanagement-db
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo=../../../src/usermanagementservice/genproto/oteldemo
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice=../../../src/usermanagementservice
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/handlers=../../../src/usermanagementservice/handlers
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/tests/mocks=../../../src/usermanagementservice/tests/mocks
+          go mod tidy
       - name: Debug Info
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
         run: |
