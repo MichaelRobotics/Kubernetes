@@ -168,15 +168,15 @@ jobs:
     needs: [setup-env, build_and_push_images]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Apply environment variables
         run: |
           # Parse JSON and apply to GITHUB_ENV
           echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
-      
+
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-      
+
       - name: Debug tracetest configuration
         run: |
           echo "Current tracetest-config.yaml content:"
@@ -187,7 +187,7 @@ jobs:
           
           echo "Updated tracetest-config.yaml content:"
           cat ./test/tracetesting/tracetest-config.yaml
-      
+
       - name: Set up environment and run integration tests
         env:
           IMAGE_VERSION: ${{ needs.build_and_push_images.outputs.version }}
@@ -196,6 +196,7 @@ jobs:
           OTEL_COLLECTOR_PORT_HTTP: 4318
           TRACETEST_IMAGE_VERSION: ${{ env.TRACETEST_IMAGE_VERSION }}
         run: |
+
           # Create proper .env files with all required variables
           cat > .env <<EOF
           IMAGE_NAME=${{ env.IMAGE_NAME }}
@@ -225,6 +226,7 @@ jobs:
           elapsed=0
           
           # Loop until frontend responds or timeout occurs
+
           while [ $elapsed -lt $TIMEOUT ]; do
             if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 | grep -q "200"; then
               echo "Frontend is responding!"
@@ -234,7 +236,7 @@ jobs:
             sleep $INTERVAL
             elapsed=$((elapsed + INTERVAL))
           done
-          
+
           if [ $elapsed -ge $TIMEOUT ]; then
             echo "Frontend service did not become available within timeout period"
             docker compose logs frontend
@@ -244,12 +246,14 @@ jobs:
           
           # Additional check for ad service integration
           echo "Checking if ad service integration is working..."
+
           if ! curl -s -X GET http://localhost:8080/api/data -H "Content-Type: application/json" -d '{"contextKeys":["test"]}' | grep -q "redirectUrl"; then
             echo "Ad service integration test failed"
             docker compose logs ad
             docker compose down
             exit 1
           fi
+
           
           echo "Services initialized successfully, adding stabilization delay..."
           sleep 20
@@ -267,6 +271,7 @@ jobs:
             docker compose logs --tail=100 tracetest-server
             docker compose logs --tail=50 otel-collector
             docker compose logs --tail=50 frontend
+
             echo "Test output:"
             cat tracetests.log
           else
@@ -291,6 +296,7 @@ jobs:
           name: test-logs
           path: opentelemetry-demo/test-logs/
           retention-days: 5
+
 
   deploy_demo:
     runs-on: ubuntu-latest
