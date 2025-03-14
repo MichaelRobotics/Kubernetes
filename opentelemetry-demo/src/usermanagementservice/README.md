@@ -13,7 +13,7 @@ login, and JWT-based authentication.
 
 ## Code Structure
 
-```
+```text
 ├── handlers/         # Auth and health endpoint handlers
 ├── models/           # User data model
 ├── genproto/         # Generated gRPC code
@@ -24,6 +24,7 @@ login, and JWT-based authentication.
 ## Network Configuration
 
 Connects to PostgreSQL via the `opentelemetry-demo` network:
+
 - Database service creates this network automatically
 - Container name `postgres` is used as hostname for connections
 - Communication occurs over the shared Docker network
@@ -54,14 +55,17 @@ cd ../usermanagementservice && docker-compose up -d
 ## API Endpoints
 
 ### Register
+
 - Request: `RegisterRequest{username, password}`
 - Response: `RegisterResponse{user_id, username, message}`
 
 ### Login
+
 - Request: `LoginRequest{username, password}`
 - Response: `LoginResponse{token, user_id}`
 
 ### Health
+
 - Request: `HealthCheckRequest{service}`
 - Response: `HealthCheckResponse{status}`
 
@@ -78,6 +82,7 @@ make test-usermanagementservice-coverage
 ## Development
 
 Generate gRPC code:
+
 ```bash
 cd opentelemetry-demo/src/usermanagementservice
 go generate ./...

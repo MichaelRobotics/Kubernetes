@@ -1,18 +1,22 @@
 # Database Migrations
 
-PostgreSQL migrations for the OpenTelemetry Demo, automatically applied during container startup.
+PostgreSQL migrations for the OpenTelemetry Demo, automatically applied during
+container startup.
 
 ## Overview
 
-This directory contains database schema migrations for the OpenTelemetry Demo's PostgreSQL
-database. Migrations are SQL scripts that create or modify the database schema and are applied
-automatically when the PostgreSQL container starts.
+This directory contains database schema migrations for the OpenTelemetry Demo's
+PostgreSQL database. Migrations are SQL scripts that create or modify the
+database schema and are applied automatically when the PostgreSQL container
+starts.
 
 ## How Migrations Work
 
-1. **Automatic Execution**: 
-   - The `./versions` directory is mounted to `/docker-entrypoint-initdb.d` in the PostgreSQL container
-   - PostgreSQL automatically executes all SQL files in this directory in alphabetical order
+1. **Automatic Execution**:
+   - The `./versions` directory is mounted to `/docker-entrypoint-initdb.d` in
+     the PostgreSQL container
+   - PostgreSQL automatically executes all SQL files in this directory in
+     alphabetical order
 
 2. **Version Tracking**:
    - Each migration has a version number: `V{number}__{description}.sql`
@@ -23,7 +27,7 @@ automatically when the PostgreSQL container starts.
 
 Migrations are organized in the following directory structure:
 
-```
+```text
 migrations/
 ├── README.md               # This documentation
 └── versions/               # Versioned SQL migration files
@@ -75,4 +79,4 @@ When adding a new migration:
 3. Use clear, descriptive comments
 4. Test thoroughly before deploying
 
-For more details, see examples in the `versions/` directory. 
+For more details, see examples in the `versions/` directory.
