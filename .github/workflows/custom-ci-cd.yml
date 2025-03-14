@@ -20,6 +20,11 @@ env:
   IMAGE_NAME: robclusterdev/clusterimages
   DEMO_VERSION: otel-demo
   IMAGE_VERSION_DEFAULT: latest
+  TRACETEST_IMAGE_VERSION: v1.7.1
+  # Define collector variables to prevent variable interpolation issues
+  OTEL_COLLECTOR_HOST: otel-collector
+  OTEL_COLLECTOR_PORT_GRPC: 4317
+  OTEL_COLLECTOR_PORT_HTTP: 4318
 
 defaults:
   run:
@@ -45,6 +50,10 @@ jobs:
           ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.IMAGE_NAME }}" '.IMAGE_NAME = $val')
           ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.DEMO_VERSION }}" '.DEMO_VERSION = $val')
           ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.IMAGE_VERSION_DEFAULT }}" '.IMAGE_VERSION = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.TRACETEST_IMAGE_VERSION }}" '.TRACETEST_IMAGE_VERSION = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.OTEL_COLLECTOR_HOST }}" '.OTEL_COLLECTOR_HOST = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.OTEL_COLLECTOR_PORT_GRPC }}" '.OTEL_COLLECTOR_PORT_GRPC = $val')
+          ENV_JSON=$(echo "$ENV_JSON" | jq --arg val "${{ env.OTEL_COLLECTOR_PORT_HTTP }}" '.OTEL_COLLECTOR_PORT_HTTP = $val')
           
           # Load .env if it exists
           if [ -f .env ]; then
@@ -159,41 +168,63 @@ jobs:
     needs: [setup-env, build_and_push_images]
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Apply environment variables
         run: |
           # Parse JSON and apply to GITHUB_ENV
           echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
-
+      
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
+      
+      - name: Debug tracetest configuration
+        run: |
+          echo "Current tracetest-config.yaml content:"
+          cat ./test/tracetesting/tracetest-config.yaml
+          
+          # Fix any variable references in the config file
+          sed -i 's/${OTEL_COLLECTOR_HOST}/otel-collector/g; s/${OTEL_COLLECTOR_PORT_GRPC}/4317/g' ./test/tracetesting/tracetest-config.yaml
+          
+          echo "Updated tracetest-config.yaml content:"
+          cat ./test/tracetesting/tracetest-config.yaml
+      
       - name: Set up environment and run integration tests
         env:
           IMAGE_VERSION: ${{ needs.build_and_push_images.outputs.version }}
+          OTEL_COLLECTOR_HOST: otel-collector
+          OTEL_COLLECTOR_PORT_GRPC: 4317
+          OTEL_COLLECTOR_PORT_HTTP: 4318
+          TRACETEST_IMAGE_VERSION: ${{ env.TRACETEST_IMAGE_VERSION }}
         run: |
-          # Create proper .env files with all necessary variables from the project defaults
-          cp -f .env .env.original || touch .env.original
-          cp -f .env.override .env.override.original || touch .env.override.original
-
-          # Set the custom image variables
-          echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env
-          echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env
-          echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env
-
-          # Add any additional variables from the original env files
-          grep -v "IMAGE_NAME\|DEMO_VERSION\|IMAGE_VERSION" .env.original >> .env || true
-
+          # Create proper .env files with all required variables
+          cat > .env <<EOF
+          IMAGE_NAME=${{ env.IMAGE_NAME }}
+          DEMO_VERSION=${{ env.DEMO_VERSION }}
+          IMAGE_VERSION=${{ env.IMAGE_VERSION }}
+          OTEL_COLLECTOR_HOST=otel-collector
+          OTEL_COLLECTOR_PORT_GRPC=4317
+          OTEL_COLLECTOR_PORT_HTTP=4318
+          TRACETEST_IMAGE_VERSION=${{ env.TRACETEST_IMAGE_VERSION }}
+          EOF
+          
+          # Create .env.override with the same values to ensure consistency
+          cp .env .env.override
+          
+          # Show the environment for debugging
+          echo "Environment for docker-compose:"
+          cat .env
+          
           # Start services
           docker compose pull
           docker compose up -d
-
+          
           # Wait for services with proper health checking
           echo "Waiting for frontend service to become available..."
           TIMEOUT=180
           INTERVAL=5
           elapsed=0
-
+          
+          # Loop until frontend responds or timeout occurs
           while [ $elapsed -lt $TIMEOUT ]; do
             if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 | grep -q "200"; then
               echo "Frontend is responding!"
@@ -203,31 +234,32 @@ jobs:
             sleep $INTERVAL
             elapsed=$((elapsed + INTERVAL))
           done
-
+          
           if [ $elapsed -ge $TIMEOUT ]; then
             echo "Frontend service did not become available within timeout period"
             docker compose logs frontend
             docker compose down
             exit 1
           fi
-
-          # Check if services are properly initialized
-          echo "Checking if services are properly initialized..."
+          
+          # Additional check for ad service integration
+          echo "Checking if ad service integration is working..."
           if ! curl -s -X GET http://localhost:8080/api/data -H "Content-Type: application/json" -d '{"contextKeys":["test"]}' | grep -q "redirectUrl"; then
             echo "Ad service integration test failed"
             docker compose logs ad
             docker compose down
             exit 1
           fi
-
+          
           echo "Services initialized successfully, adding stabilization delay..."
-          sleep 10
-
+          sleep 20
+          
           # Run trace tests and capture exit code
           echo "Running trace tests..."
-          make run-tracetesting
+          set -o pipefail
+          make run-tracetesting | tee tracetests.log
           TEST_EXIT_CODE=$?
-
+          
           # If tests failed, collect and show logs
           if [ $TEST_EXIT_CODE -ne 0 ]; then
             echo "Trace tests failed with exit code $TEST_EXIT_CODE"
@@ -235,25 +267,30 @@ jobs:
             docker compose logs --tail=100 tracetest-server
             docker compose logs --tail=50 otel-collector
             docker compose logs --tail=50 frontend
+            echo "Test output:"
+            cat tracetests.log
           else
             echo "Trace tests completed successfully"
           fi
-
+          
+          # Always collect logs for analysis
+          mkdir -p test-logs
+          docker compose logs tracetest-server > test-logs/tracetest-server.log
+          docker compose logs otel-collector > test-logs/otel-collector.log
+          
           # Clean up
           docker compose down
-
-          # Restore original env files
-          [ -f .env.original ] && mv .env.original .env
-          [ -f .env.override.original ] && mv .env.override.original .env.override
-
+          
           # Return the actual test exit code
           exit $TEST_EXIT_CODE
-    
-      - name: Report Test Results
+      
+      - name: Upload test logs
         if: always()
-        run: |
-          echo "Integration test results were reported in the previous step"
-          # No exit code check here as the previous step already handles it properly
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: opentelemetry-demo/test-logs/
+          retention-days: 5
 
   deploy_demo:
     runs-on: ubuntu-latest
@@ -272,10 +309,12 @@ jobs:
           echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env
           echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env
           echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env
+          echo "OTEL_COLLECTOR_HOST=otel-collector" >> .env
+          echo "OTEL_COLLECTOR_PORT_GRPC=4317" >> .env
+          echo "OTEL_COLLECTOR_PORT_HTTP=4318" >> .env
+          echo "TRACETEST_IMAGE_VERSION=${{ env.TRACETEST_IMAGE_VERSION }}" >> .env
           
-          echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env.override
-          echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env.override
-          echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env.override
+          cp .env .env.override
       
       - name: Display successful completion message
         run: |
