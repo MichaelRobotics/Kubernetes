@@ -168,26 +168,60 @@ jobs:
     needs: [setup-env, build_and_push_images]
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Apply environment variables
         run: |
           # Parse JSON and apply to GITHUB_ENV
           echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
-
+      
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Debug tracetest configuration
+      
+      - name: Prepare tracetest run script and configuration
         run: |
-          echo "Current tracetest-config.yaml content:"
-          cat ./test/tracetesting/tracetest-config.yaml
+          # Create directory for logs
+          mkdir -p test-logs
           
-          # Fix any variable references in the config file
-          sed -i 's/${OTEL_COLLECTOR_HOST}/otel-collector/g; s/${OTEL_COLLECTOR_PORT_GRPC}/4317/g' ./test/tracetesting/tracetest-config.yaml
+          # Check and modify the run.bash script
+          echo "Modifying run.bash script to use explicit values..."
+          if [ -f "./test/tracetesting/run.bash" ]; then
+            # Save original for reference
+            cp ./test/tracetesting/run.bash ./test-logs/run.bash.original
+            
+            # Replace environment variable references with explicit values
+            sed -i 's/\${OTEL_COLLECTOR_HOST}/otel-collector/g; s/\${OTEL_COLLECTOR_PORT_GRPC}/4317/g; s/\${OTEL_COLLECTOR_PORT_HTTP}/4318/g' "./test/tracetesting/run.bash"
+            
+            echo "Updated run.bash script:"
+            cat "./test/tracetesting/run.bash"
+          else
+            echo "WARNING: run.bash not found at expected location"
+            find ./test -name "run.bash" | xargs ls -la
+          fi
           
-          echo "Updated tracetest-config.yaml content:"
-          cat ./test/tracetesting/tracetest-config.yaml
-
+          # Also check and update the tracetest-config.yaml file
+          if [ -f "./test/tracetesting/tracetest-config.yaml" ]; then
+            # Save original for reference
+            cp ./test/tracetesting/tracetest-config.yaml ./test-logs/tracetest-config.yaml.original
+            
+            # Replace environment variable references
+            sed -i 's/\${OTEL_COLLECTOR_HOST}/otel-collector/g; s/\${OTEL_COLLECTOR_PORT_GRPC}/4317/g; s/\${OTEL_COLLECTOR_PORT_HTTP}/4318/g' "./test/tracetesting/tracetest-config.yaml"
+            
+            echo "Updated tracetest-config.yaml:"
+            cat "./test/tracetesting/tracetest-config.yaml"
+          fi
+          
+          # Modify tracetesting-vars.yaml if it exists (this file is created by run.bash)
+          if [ -f "./test/tracetesting/tracetesting-vars.yaml" ]; then
+            # Save original for reference
+            cp ./test/tracetesting/tracetesting-vars.yaml ./test-logs/tracetesting-vars.yaml.original
+            
+            # Replace environment variable references
+            sed -i 's/\${OTEL_COLLECTOR_HOST}/otel-collector/g; s/\${OTEL_COLLECTOR_PORT_GRPC}/4317/g; s/\${OTEL_COLLECTOR_PORT_HTTP}/4318/g' "./test/tracetesting/tracetesting-vars.yaml"
+            
+            echo "Updated tracetesting-vars.yaml:"
+            cat "./test/tracetesting/tracetesting-vars.yaml"
+          fi
+      
       - name: Set up environment and run integration tests
         env:
           IMAGE_VERSION: ${{ needs.build_and_push_images.outputs.version }}
@@ -196,7 +230,6 @@ jobs:
           OTEL_COLLECTOR_PORT_HTTP: 4318
           TRACETEST_IMAGE_VERSION: ${{ env.TRACETEST_IMAGE_VERSION }}
         run: |
-
           # Create proper .env files with all required variables
           cat > .env <<EOF
           IMAGE_NAME=${{ env.IMAGE_NAME }}
@@ -226,7 +259,6 @@ jobs:
           elapsed=0
           
           # Loop until frontend responds or timeout occurs
-
           while [ $elapsed -lt $TIMEOUT ]; do
             if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 | grep -q "200"; then
               echo "Frontend is responding!"
@@ -236,7 +268,7 @@ jobs:
             sleep $INTERVAL
             elapsed=$((elapsed + INTERVAL))
           done
-
+          
           if [ $elapsed -ge $TIMEOUT ]; then
             echo "Frontend service did not become available within timeout period"
             docker compose logs frontend
@@ -246,17 +278,20 @@ jobs:
           
           # Additional check for ad service integration
           echo "Checking if ad service integration is working..."
-
           if ! curl -s -X GET http://localhost:8080/api/data -H "Content-Type: application/json" -d '{"contextKeys":["test"]}' | grep -q "redirectUrl"; then
             echo "Ad service integration test failed"
             docker compose logs ad
             docker compose down
             exit 1
           fi
-
           
           echo "Services initialized successfully, adding stabilization delay..."
           sleep 20
+          
+          # Export variables explicitly to ensure they're available in subshells
+          export OTEL_COLLECTOR_HOST=otel-collector
+          export OTEL_COLLECTOR_PORT_GRPC=4317
+          export OTEL_COLLECTOR_PORT_HTTP=4318
           
           # Run trace tests and capture exit code
           echo "Running trace tests..."
@@ -271,7 +306,6 @@ jobs:
             docker compose logs --tail=100 tracetest-server
             docker compose logs --tail=50 otel-collector
             docker compose logs --tail=50 frontend
-
             echo "Test output:"
             cat tracetests.log
           else
@@ -279,7 +313,6 @@ jobs:
           fi
           
           # Always collect logs for analysis
-          mkdir -p test-logs
           docker compose logs tracetest-server > test-logs/tracetest-server.log
           docker compose logs otel-collector > test-logs/otel-collector.log
           
@@ -288,7 +321,7 @@ jobs:
           
           # Return the actual test exit code
           exit $TEST_EXIT_CODE
-      
+        
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -296,7 +329,6 @@ jobs:
           name: test-logs
           path: opentelemetry-demo/test-logs/
           retention-days: 5
-
 
   deploy_demo:
     runs-on: ubuntu-latest
