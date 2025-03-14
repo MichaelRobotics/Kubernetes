@@ -1,0 +1,12 @@
+# values-prod.yaml
+replicaCount: 5
+image:
+  repository: nginx
+  tag: "1.21.0"
+resources:
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  requests:
+    cpu: "1"
+    memory: "2Gi"

@@ -1,0 +1,55 @@
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: production
+  labels:
+    app: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: production
+  template:
+    metadata:
+      labels:
+        app: production
+    spec:
+      containers:
+      - name: production
+        image: registry.k8s.io/ingress-nginx/e2e-test-echo:v1.0.1@sha256:1cec65aa768720290d05d65ab1c297ca46b39930e56bc9488259f9114fcd30e2
+        ports:
+        - containerPort: 80
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: production
+  labels:
+    app: production
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: production

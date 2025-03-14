@@ -24,6 +24,7 @@ on:
         options:
           - unit
           - setup
+          - all
       debug_enabled:
         description: 'Enable debug mode'
         required: false
@@ -63,12 +64,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd opentelemetry-demo
-          cd src/usermanagementservice
-          go get github.com/stretchr/testify/assert
-          go get github.com/stretchr/testify/mock
-          go get github.com/DATA-DOG/go-sqlmock
+          cd opentelemetry-demo/src/usermanagementservice
+          # Replace imports with local paths
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice/genproto/oteldemo=./genproto/oteldemo
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/db/postgres=../db/postgres
           go mod tidy
+
+          # Also set up replacements in other module files
+          cd genproto/oteldemo
+          go mod edit -replace github.com/MichaelRobotics/Kubernetes/opentelemetry-demo/src/usermanagementservice=../../
+          go mod tidy
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Debug Info
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
@@ -77,11 +88,36 @@ jobs:
           echo "Go version: $(go version)"
           echo "Directory structure:"
           find opentelemetry-demo/src/usermanagementservice -type f | sort
+          echo "go.mod content:"
+          cat opentelemetry-demo/src/usermanagementservice/go.mod
+          echo "genproto/oteldemo/go.mod content:"
+          cat opentelemetry-demo/src/usermanagementservice/genproto/oteldemo/go.mod
+        
+        # Determine test type based on trigger
+      - name: Set test type
+        id: set-test-type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "TEST_SCOPE=${{ inputs.test_scope }}" >> $GITHUB_ENV
+          else
+            echo "TEST_SCOPE=all" >> $GITHUB_ENV
+          fi
 
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+          
+      # Run the appropriate test based on the test scope
       - name: Run unit tests
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit' }}
+        if: ${{ env.TEST_SCOPE == 'unit' }}
         run: cd opentelemetry-demo && make user-management-service-unittest
-
+      
       - name: Run setup test
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'setup' }}
+        if: ${{ env.TEST_SCOPE == 'setup' }}
         run: cd opentelemetry-demo && make user-management-service-setup-test
+
+      - name: Run all tests
+        if: ${{ env.TEST_SCOPE == 'all' }}
+        run: cd opentelemetry-demo && make user-management-service-unittest && make user-management-service-setup-test

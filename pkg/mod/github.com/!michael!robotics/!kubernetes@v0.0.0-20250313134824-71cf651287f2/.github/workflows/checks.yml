@@ -1,0 +1,40 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+name: Checks
+
+on:
+  pull_request:
+    paths:
+      - 'opentelemetry-demo/**'
+
+  push:
+    branches:
+      - '!main'  # Any branch except main
+    paths:
+      - 'opentelemetry-demo/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build_images:
+    uses: ./.github/workflows/component-build-images.yml    
+    with:
+      push: false
+      version: 'dev'
+    secrets: inherit
+
+  markdownlint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opentelemetry-demo
+    steps:
+      - name: check out code
+        uses: actions/checkout@v4
+      - name: install dependencies
+        run: npm install
+      - name: run markdownlint
+        run: make markdownlint

@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  usermanagementservice:
+    container_name: ums-service
+    build:
+      context: ../../../
+      dockerfile: src/usermanagementservice/Dockerfile
+    environment:
+      - DB_CONN=postgres://test_user:test_password@postgres:5432/test_db?sslmode=disable
+      - USER_SVC_URL=:8082
+      - JWT_SECRET=test_secret
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy 
+    networks:
+      - integration-test
+  postgres:
+    container_name: ums-db  
+    image: postgres:14
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../../../src/db/migrations/versions:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "test_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - integration-test
+networks:
+  integration-test:
+    name: integration-test
+volumes:
+  postgres_data:

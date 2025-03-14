@@ -44,6 +44,20 @@ jobs:
           go-version: '1.22'
           cache: true
 
+      # Add Docker Hub login to avoid rate limiting
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      # Install standalone docker-compose binary
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
       - name: Debug Info
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled == true }}
         run: |
@@ -52,12 +66,28 @@ jobs:
           echo "Directory structure:"
           find opentelemetry-demo/src/db -type f | sort
 
-      # Run all tests for push events to source code (not tests)
+
+      - name: Set test type
+        id: set-test-type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "TEST_SCOPE=${{ inputs.test_scope }}" >> $GITHUB_ENV
+          else
+            echo "TEST_SCOPE=all" >> $GITHUB_ENV
+          fi
+          
+      # Run unit tests
       - name: Run unit tests
-        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.test_scope == 'unit') }}
+        # Run if pushed or when manually triggered with unit or all scope
+        if: ${{ env.TEST_SCOPE == 'unit' }}
         run: cd opentelemetry-demo && make db-unittest
 
       # Run setup tests
       - name: Run setup test
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_scope == 'setup' }}
+        # Run if manually triggered with setup or all scope
+        if: ${{ env.TEST_SCOPE == 'setup' }}
         run: cd opentelemetry-demo && make db-setup-test
+
+      - name: Run all tests
+        if: ${{ env.TEST_SCOPE == 'all' }}
+        run: cd opentelemetry-demo && make db-unittest && make db-setup-test

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: docker-registry
+  namespace: default
+spec:
+  selector:
+    app: registry
+  ports:
+  - port: 5000
+    targetPort: 5000
+    nodePort: 30000 # Optional: Specify a custom NodePort (default range is 30000-32767)
+  type: NodePort

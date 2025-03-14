@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler-test
+  labels:
+    app: autoscaler-test
+spec:
+  replicas: 50 # Number of replicas exceeding current capacity
+  selector:
+    matchLabels:
+      app: autoscaler-test
+  template:
+    metadata:
+      labels:
+        app: autoscaler-test
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command:
+        - sleep
+        - "3600"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

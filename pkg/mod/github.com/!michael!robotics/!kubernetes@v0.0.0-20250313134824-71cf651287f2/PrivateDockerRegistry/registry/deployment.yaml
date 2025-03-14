@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+        - name: registry
+          image: registry:2.8.2
+          volumeMounts:
+            - name: repo-vol
+              mountPath: /var/lib/registry
+            - name: auth-vol
+              mountPath: /auth
+              readOnly: true
+            - name: certs-vol
+              mountPath: /certs
+              readOnly: true
+          env:
+            - name: REGISTRY_HTTP_TLS_CERTIFICATE
+              value: "/certs/tls.crt"
+            - name: REGISTRY_HTTP_TLS_KEY
+              value: "/certs/tls.key"
+            - name: REGISTRY_AUTH
+              value: "htpasswd"
+            - name: REGISTRY_AUTH_HTPASSWD_REALM
+              value: "Registry Realm"
+            - name: REGISTRY_AUTH_HTPASSWD_PATH
+              value: "/auth/htpasswd"
+      volumes:
+        - name: repo-vol
+          persistentVolumeClaim:
+            claimName: registry-pvc
+        - name: auth-vol
+          secret:
+            secretName: auth-secret
+        - name: certs-vol
+          secret:
+            secretName: certs-secret
+

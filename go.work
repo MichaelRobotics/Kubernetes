@@ -1,0 +1,7 @@
+go 1.22.1
+
+use (
+	./opentelemetry-demo/src/usermanagementservice
+	./opentelemetry-demo/src/usermanagementservice/genproto/oteldemo
+	./opentelemetry-demo/test/integration-tests/usermanagement-db
+)

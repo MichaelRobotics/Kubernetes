@@ -1,0 +1,30 @@
+# helmfile.yaml
+repositories:
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  - name: prometheus
+    namespace: monitoring
+    chart: prometheus-community/prometheus
+    values:
+      - values-prometheus.yaml
+    set:
+      - name: replicaCount
+        value: 3
+    hooks:
+      - events: ["prepare"]
+        command: "./pre-deploy-prometheus.sh"
+        showlogs: true
+
+  - name: myapp
+    chart: bitnami/nginx
+    namespace: default
+    values:
+      - values-nginx.yaml           # Regular values file
+    hooks:
+      - events: ["prepare"]
+        command: "./pre-deploy-nginx.sh"
+        showlogs: true

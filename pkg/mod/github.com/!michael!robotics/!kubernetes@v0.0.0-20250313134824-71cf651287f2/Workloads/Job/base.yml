@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: silly-demo
+  labels:
+    app.kubernetes.io/name: silly-demo
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: silly-demo
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - image: cgr.dev/chainguard/bash
+          name: silly-demo
+          command: ["echo", "What is this?"]
