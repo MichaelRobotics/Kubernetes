@@ -159,36 +159,101 @@ jobs:
     needs: [setup-env, build_and_push_images]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Apply environment variables
         run: |
           # Parse JSON and apply to GITHUB_ENV
           echo '${{ needs.setup-env.outputs.env_vars }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
-      
+
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-      
-      - name: Run integration tests
+
+      - name: Set up environment and run integration tests
         env:
           IMAGE_VERSION: ${{ needs.build_and_push_images.outputs.version }}
         run: |
-          # Write minimal .env for docker-compose
+          # Create proper .env files with all necessary variables from the project defaults
+          cp -f .env .env.original || touch .env.original
+          cp -f .env.override .env.override.original || touch .env.override.original
+
+          # Set the custom image variables
           echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" > .env
           echo "DEMO_VERSION=${{ env.DEMO_VERSION }}" >> .env
           echo "IMAGE_VERSION=${{ env.IMAGE_VERSION }}" >> .env
-          
+
+          # Add any additional variables from the original env files
+          grep -v "IMAGE_NAME\|DEMO_VERSION\|IMAGE_VERSION" .env.original >> .env || true
+
+          # Start services
           docker compose pull
           docker compose up -d
-          echo "Waiting for services to be ready..."
-          sleep 30
+
+          # Wait for services with proper health checking
+          echo "Waiting for frontend service to become available..."
+          TIMEOUT=180
+          INTERVAL=5
+          elapsed=0
+
+          while [ $elapsed -lt $TIMEOUT ]; do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 | grep -q "200"; then
+              echo "Frontend is responding!"
+              break
+            fi
+            echo "Waiting for frontend service... (${elapsed}/${TIMEOUT}s)"
+            sleep $INTERVAL
+            elapsed=$((elapsed + INTERVAL))
+          done
+
+          if [ $elapsed -ge $TIMEOUT ]; then
+            echo "Frontend service did not become available within timeout period"
+            docker compose logs frontend
+            docker compose down
+            exit 1
+          fi
+
+          # Check if services are properly initialized
+          echo "Checking if services are properly initialized..."
+          if ! curl -s -X GET http://localhost:8080/api/data -H "Content-Type: application/json" -d '{"contextKeys":["test"]}' | grep -q "redirectUrl"; then
+            echo "Ad service integration test failed"
+            docker compose logs ad
+            docker compose down
+            exit 1
+          fi
+
+          echo "Services initialized successfully, adding stabilization delay..."
+          sleep 10
+
+          # Run trace tests and capture exit code
+          echo "Running trace tests..."
           make run-tracetesting
+          TEST_EXIT_CODE=$?
+
+          # If tests failed, collect and show logs
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "Trace tests failed with exit code $TEST_EXIT_CODE"
+            echo "Collecting logs from critical services..."
+            docker compose logs --tail=100 tracetest-server
+            docker compose logs --tail=50 otel-collector
+            docker compose logs --tail=50 frontend
+          else
+            echo "Trace tests completed successfully"
+          fi
+
+          # Clean up
           docker compose down
-      
+
+          # Restore original env files
+          [ -f .env.original ] && mv .env.original .env
+          [ -f .env.override.original ] && mv .env.override.original .env.override
+
+          # Return the actual test exit code
+          exit $TEST_EXIT_CODE
+    
       - name: Report Test Results
         if: always()
         run: |
-          echo "Integration test results:"
-          [ $? -eq 0 ] && echo "✅ All tests passed" || { echo "❌ Tests failed"; exit 1; }
+          echo "Integration test results were reported in the previous step"
+          # No exit code check here as the previous step already handles it properly
 
   deploy_demo:
     runs-on: ubuntu-latest
