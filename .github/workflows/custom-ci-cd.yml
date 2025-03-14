@@ -260,6 +260,7 @@ jobs:
           PROMETHEUS_PORT=9090
           PROMETHEUS_HOST=prometheus
           PROMETHEUS_ADDR=prometheus:9090
+          OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
           EOF
           
           # Create .env.override with the same values to ensure consistency
