@@ -359,7 +359,7 @@ jobs:
           fi
           
           # Always collect logs for analysis
-          mkdir -p test-logs
+
           docker compose logs tracetest-server > test-logs/tracetest-server.log
           docker compose logs otel-collector > test-logs/otel-collector.log
           
