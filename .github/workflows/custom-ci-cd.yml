@@ -230,28 +230,102 @@ jobs:
           OTEL_COLLECTOR_PORT_HTTP: 4318
           TRACETEST_IMAGE_VERSION: ${{ env.TRACETEST_IMAGE_VERSION }}
         run: |
-
-          while [ $elapsed -lt $TIMEOUT ]; do
+          # Create proper .env files with all required variables
+          cat > .env <<EOF
+          IMAGE_NAME=${{ env.IMAGE_NAME }}
+          DEMO_VERSION=${{ env.DEMO_VERSION }}
+          IMAGE_VERSION=${{ env.IMAGE_VERSION }}
+          OTEL_COLLECTOR_HOST=otel-collector
+          OTEL_COLLECTOR_PORT_GRPC=4317
+          OTEL_COLLECTOR_PORT_HTTP=4318
+          TRACETEST_IMAGE_VERSION=${{ env.TRACETEST_IMAGE_VERSION }}
+          FLAGD_HOST=flagd
+          FLAGD_PORT=8013
+          FLAGD_UI_HOST=flagd-ui
+          FLAGD_UI_PORT=4000
+          KAFKA_PORT=9092
+          KAFKA_ADDR=kafka:9092
+          VALKEY_PORT=6379
+          VALKEY_ADDR=valkey-cart:6379
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=postgres
+          POSTGRES_DB=postgres
+          POSTGRES_PORT=5432
+          POSTGRES_HOST=postgres
+          DB_CONN=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+          GRAFANA_PORT=3000
+          GRAFANA_HOST=grafana
+          JAEGER_PORT=16686
+          JAEGER_HOST=jaeger
+          PROMETHEUS_PORT=9090
+          PROMETHEUS_HOST=prometheus
+          PROMETHEUS_ADDR=prometheus:9090
+          EOF
+          
+          # Create .env.override with the same values to ensure consistency
+          cp .env .env.override
+          
+          # Show the environment for debugging
+          echo "Environment for docker-compose:"
+          cat .env
+          
+          # Start services
+          docker compose pull
+          docker compose up -d
+          
+          # Wait for frontend service with fixed values
+          echo "Waiting for frontend service to become available..."
+          
+          # Using a script with hardcoded values to avoid variable issues
+          cat > wait-for-frontend.sh <<EOF
+          #!/bin/bash
+          TIMEOUT=180
+          INTERVAL=5
+          elapsed=0
+          
+          echo "Starting health check loop with timeout \$TIMEOUT seconds"
+          while [ \$elapsed -lt \$TIMEOUT ]; do
             if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 | grep -q "200"; then
               echo "Frontend is responding!"
-              break
+              exit 0
             fi
-            echo "Waiting for frontend service... (${elapsed}/${TIMEOUT}s)"
-            sleep $INTERVAL
-            elapsed=$((elapsed + INTERVAL))
+            echo "Waiting for frontend service... (\${elapsed}/\${TIMEOUT}s)"
+            sleep \$INTERVAL
+            elapsed=\$((elapsed + INTERVAL))
           done
           
-          if [ $elapsed -ge $TIMEOUT ]; then
-            echo "Frontend service did not become available within timeout period"
+          echo "Frontend service did not become available within timeout period"
+          exit 1
+          EOF
+          
+          # Make the script executable
+          chmod +x wait-for-frontend.sh
+          
+          # Run the script
+          if ! ./wait-for-frontend.sh; then
+            echo "Frontend service health check failed"
             docker compose logs frontend
             docker compose down
             exit 1
           fi
           
-          # Additional check for ad service integration
+          # Check ad service integration with explicit script
           echo "Checking if ad service integration is working..."
-
+          cat > check-ad-service.sh <<EOF
+          #!/bin/bash
           if ! curl -s -X GET http://localhost:8080/api/data -H "Content-Type: application/json" -d '{"contextKeys":["test"]}' | grep -q "redirectUrl"; then
+            echo "Ad service integration test failed"
+            exit 1
+          fi
+          echo "Ad service integration is working"
+          exit 0
+          EOF
+          
+          # Make the script executable
+          chmod +x check-ad-service.sh
+          
+          # Run the script
+          if ! ./check-ad-service.sh; then
             echo "Ad service integration test failed"
             docker compose logs ad
             docker compose down
@@ -268,9 +342,8 @@ jobs:
 
           # Run trace tests and capture exit code
           echo "Running trace tests..."
-          set -o pipefail
           make run-tracetesting | tee tracetests.log
-          TEST_EXIT_CODE=$?
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
           
           # If tests failed, collect and show logs
           if [ $TEST_EXIT_CODE -ne 0 ]; then
