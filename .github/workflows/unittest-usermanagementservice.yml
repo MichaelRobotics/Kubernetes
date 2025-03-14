@@ -24,6 +24,7 @@ on:
         options:
           - unit
           - setup
+          - all
       debug_enabled:
         description: 'Enable debug mode'
         required: false
@@ -93,7 +94,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "TEST_SCOPE=${{ inputs.test_scope }}" >> $GITHUB_ENV
           else
-            echo "TEST_SCOPE=unit" >> $GITHUB_ENV
+            echo "TEST_SCOPE=all" >> $GITHUB_ENV
           fi
       
       # Run the appropriate test based on the test scope
@@ -104,3 +105,7 @@ jobs:
       - name: Run setup test
         if: ${{ env.TEST_SCOPE == 'setup' }}
         run: cd opentelemetry-demo && make user-management-service-setup-test
+
+      - name: Run all tests
+        if: ${{ env.TEST_SCOPE == 'all' }}
+        run: cd opentelemetry-demo && make user-management-service-unittest && make user-management-service-setup-test
