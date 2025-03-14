@@ -208,8 +208,7 @@ db-setup-test:
 .PHONY: db-unittest
 db-unittest:
 	@echo "Running database unit tests..."
-	@cd src/db && go test -v `go list ./... | grep -v /genproto/`
-	@cd src/db/postgres && go test -v `go list ./... | grep -v /genproto/`
+	@cd src/db/postgres && go test -v ./...
 
 # Database tests with coverage
 .PHONY: db-unittest-coverage
