@@ -36,7 +36,7 @@ jobs:
     outputs:
       env_vars: ${{ steps.set-env.outputs.env_vars }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Load and set environment variables
         id: set-env
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup-env
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Apply environment variables
         run: |
@@ -125,7 +125,7 @@ jobs:
           - { file: ./src/flagd-ui/Dockerfile, tag_suffix: otel-demo-flagd-ui, context: ./ }
           - { file: ./src/usermanagementservice/Dockerfile, tag_suffix: otel-demo-usermanagementservice, context: ./ }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
@@ -139,7 +139,7 @@ jobs:
       
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-env, build_and_push_images]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Apply environment variables
         run: |
@@ -371,7 +371,7 @@ jobs:
 
       - name: Upload test logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-logs
           path: opentelemetry-demo/test-logs/
@@ -382,7 +382,7 @@ jobs:
     needs: [setup-env, integration_tests]
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Apply environment variables
         run: |

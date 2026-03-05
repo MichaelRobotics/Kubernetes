@@ -33,7 +33,7 @@ jobs:
         working-directory: opentelemetry-demo
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: install dependencies
         run: npm install
       - name: run markdownlint
