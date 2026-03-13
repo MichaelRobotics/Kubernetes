@@ -20,7 +20,7 @@ jobs:
         working-directory: opentelemetry-demo
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: run tracetesting
         run: |
           make build && docker system prune -f && make run-tracetesting
